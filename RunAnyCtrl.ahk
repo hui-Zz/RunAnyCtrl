@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.0 @2018.02.28
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.0 @2018.03.01
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -69,7 +69,7 @@ LVMenu("LVMenu")
 LVMenu("ahkGuiMenu")
 Gui, Menu, ahkGuiMenu
 LVModifyCol(38,2,3,4,5,7,8)  ; 根据内容自动调整每列的大小.
-Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018.02.28
+Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018.03.01
 return
 
 LVMenu(addMenu){
@@ -248,15 +248,16 @@ Gui,2:Add, Button, xm+10 y+15 w70 GLVFuncAdd, 增加规则
 Gui,2:Add, Button, x+10 yp w70 GLVFuncEdit, 修改规则
 Gui,2:Add, Button, x+10 yp w70 GLVFuncRemove, 减少规则
 Gui,2:Font, s10, Microsoft YaHei
-Gui,2:Add, Listview, xm+10 y+10 w480 r10 grid AltSubmit C808000 vFuncLV glistfunc, 规则名|条件|自定义条件值
+Gui,2:Add, Listview, xm+10 y+10 w480 r10 grid AltSubmit C808000 vFuncLV glistfunc, 规则名|中断|条件|自定义条件值
 ;[读取启动项设置的规则内容写入列表]
 GuiControl, 2:-Redraw, FuncLV
 For k, v in runruleitemList[FileName]
 {
-	LV_Add("", v["ruleName"], v["ruleLogic"] ? "相等" : "不相等", v["ruleParamStr"])
+	LV_Add("", v["ruleName"], v["ruleBreak"] ? "*" : "", v["ruleLogic"] ? "相等" : "不相等", v["ruleParamStr"])
 }
 LV_ModifyCol(1)
 LV_ModifyCol(2)
+LV_ModifyCol(3)
 GuiControl, 2:+Redraw, FuncLV
 Gui,2:Add,Button,Default xm+150 y+15 w75 GLVSave,保存(&Y)
 Gui,2:Add,Button,x+20 w75 GLVCancel,取消(&C)
@@ -298,10 +299,11 @@ LVSave:
 	Loop % LV_GetCount()
 	{
 		LV_GetText(RuleName, A_Index, 1)
-		LV_GetText(FuncBoolean, A_Index, 2)
-		LV_GetText(FuncValue, A_Index, 3)
+		LV_GetText(FuncBreak, A_Index, 2)
+		LV_GetText(FuncBoolean, A_Index, 3)
+		LV_GetText(FuncValue, A_Index, 4)
 		FuncBoolean:=FuncBoolean="相等" ? 1 : 0
-		ruleContent.=RuleName . "|" . FuncBoolean . "|" . FuncValue . "`n"
+		ruleContent.=RuleName . "|" . FuncBreak . FuncBoolean . "|" . FuncValue . "`n"
 	}
 	if(ruleContent){
 		stringtrimright, ruleContent, ruleContent, 1
@@ -369,6 +371,7 @@ return
 LVFuncAdd:
 	menuFuncItem:="新建规则函数"
 	RuleName:=FuncBoolean:=FuncValue:=""
+	FuncBreak:=0
 	FuncBoolean1:=1
 	RuleNameChoose:=1
 	gosub,LVFuncConfig
@@ -379,9 +382,11 @@ LVFuncEdit:
 	if not RowNumber
 		return
 	LV_GetText(RuleName, RowNumber, 1)
-	LV_GetText(FuncBoolean, RowNumber, 2)
-	LV_GetText(FuncValue, RowNumber, 3)
+	LV_GetText(FuncBreak, RowNumber, 2)
+	LV_GetText(FuncBoolean, RowNumber, 3)
+	LV_GetText(FuncValue, RowNumber, 4)
 	FuncBoolean1:=FuncBoolean="相等" ? 1 : 0
+	FuncBreak:=FuncBreak ? 1 : 0
 	RuleNameChoose:=1
 	loop, parse, rulenameStr, |
 	{
@@ -419,7 +424,8 @@ LVFuncConfig:
 	Gui,F:Add, DropDownList, xm+60 yp Choose%RuleNameChoose% vvRuleName, %rulenameStr%
 	Gui,F:Add, Radio, xm y+10 Checked%FuncBoolean1% vvFuncBoolean1, 相等、真(&T)
 	Gui,F:Add, Radio, x+5 yp Checked%FuncBoolean2% vvFuncBoolean2, 不相等、假(&F)
-	Gui,F:Add, Text, xm y+10 w350, 自定义条件(只判断规则真假，不用填写)：`n（多个参数每行为一个参数，最多支持10个）
+	Gui,F:Add, CheckBox, x+20 yp Checked%FuncBreak% vvFuncBreak, 不满足中断规则循环
+	Gui,F:Add, Text, xm y+10 w350, 自定义条件(只判断规则真假，不用填写)：`n（多个参数每行为一个参数，最多支持10个，保存会用|分隔）
 	Gui,F:Add, Edit, xm y+10 w350 r8 vvFuncValue, %FuncValue%
 	Gui,F:Add, Button,Default xm+80 y+15 w75 GLVFuncSave,保存(&Y)
 	Gui,F:Add, Button,x+10 w75 GLVCancel,取消(&C)
@@ -438,9 +444,6 @@ LVFuncRemove:
 			break
 		IfMsgBox Yes
 		{
-			LV_GetText(RuleName, RowNumber, 1)
-			LV_GetText(FuncBoolean, RowNumber, 2)
-			LV_GetText(FuncValue, RowNumber, 3)
 			DelRowList:=RowNumber . ":" . DelRowList
 		}
 	}
@@ -478,12 +481,13 @@ LVFuncSave:
 	Gui,2:Default
 	vFuncBoolean:=vFuncBoolean1 ? 1 : 0
 	if(menuFuncItem="修改规则函数"){
-		LV_Modify(RowNumber,"",vRuleName,vFuncBoolean ? "相等" : "不相等",funcValueStr)
+		LV_Modify(RowNumber,"",vRuleName,vFuncBreak ? "*" : "",vFuncBoolean ? "相等" : "不相等",funcValueStr)
 	}else{
-		LV_Add("",vRuleName,vFuncBoolean ? "相等" : "不相等",funcValueStr)
+		LV_Add("",vRuleName,vFuncBreak ? "*" : "",vFuncBoolean ? "相等" : "不相等",funcValueStr)
 	}
 	LV_ModifyCol(1)
 	LV_ModifyCol(2)
+	LV_ModifyCol(3)
 	GuiControl, 2:+Redraw, FuncLV
 return
 listfunc:
@@ -859,6 +863,11 @@ Func_Effect(runn, runv){
 		if(!v["ruleLogic"]){
 			effectFlag:=effectFlag ? false : true
 		}
+		;规则不满足且有中断标记则直接中断后续判断并停止规则循环
+		if(!effectFlag && v["ruleBreak"]){
+			try SetTimer,% funcEffect%runn%, Off
+			break
+		}
 		;该启动项所有规则必须全部为真时，如有一假就退出循环
 		;该启动项只需要有一项规则为真时，如有一真就退出循环
 		if(rulelogicList[runn]){
@@ -927,6 +936,10 @@ Var_Set:
 	AutoRun:=AutoRun ? 1 : 0
 	global KeyList:=["run_item","rule_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item","func_item"]
 	global mostrunIndex:=Object()
+	IfNotExist,%A_ScriptDir%\Lib
+	{
+		FileCreateDir, %A_ScriptDir%\Lib
+	}
 	IfNotExist,%iniFile%
 	{
 		initIniContent:=""
@@ -1076,7 +1089,12 @@ Rule_Item_Read:
 					continue
 				}
 				if(A_Index=2){
-					ruleObj["ruleLogic"]:=A_LoopField
+					ruleLogicStr:=A_LoopField
+					if(InStr(A_LoopField, "*")){
+						ruleObj["ruleBreak"]:=1
+						StringReplace, ruleLogicStr, A_LoopField, *
+					}
+					ruleObj["ruleLogic"]:=ruleLogicStr
 					continue
 				}
 				if(A_Index>=3 && A_Index<12){
