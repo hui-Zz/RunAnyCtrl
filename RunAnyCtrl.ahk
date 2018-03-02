@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.0 @2018.03.01
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.0 @2018.03.02
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -69,7 +69,7 @@ LVMenu("LVMenu")
 LVMenu("ahkGuiMenu")
 Gui, Menu, ahkGuiMenu
 LVModifyCol(38,2,3,4,5,7,8)  ; 根据内容自动调整每列的大小.
-Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018.03.01
+Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018.03.02
 return
 
 LVMenu(addMenu){
@@ -81,7 +81,7 @@ LVMenu(addMenu){
 	Menu, %addMenu%, Add,% flag ? "新建" : "新建`tF3", LVAdd
 	Menu, %addMenu%, Icon,% flag ? "新建" : "新建`tF3", SHELL32.dll,194
 	Menu, %addMenu%, Add,% flag ? "挂起" : "挂起`tF4", LVSuspend
-	Menu, %addMenu%, Icon,% flag ? "挂起" : "挂起`tF4", %ahkExePath% ,3
+	Menu, %addMenu%, Icon,% flag ? "挂起" : "挂起`tF4", %ahkExePath%,3
 	Menu, %addMenu%, Add,% flag ? "暂停" : "暂停`tF5", LVPause
 	Menu, %addMenu%, Icon,% flag ? "暂停" : "暂停`tF5", %ahkExePath%,4
 	Menu, %addMenu%, Add,% flag ? "关闭" : "关闭`tF6", LVClose
@@ -94,6 +94,8 @@ LVMenu(addMenu){
 	Menu, %addMenu%, Icon,% flag ? "导入" : "导入`tF8", SHELL32.dll,46
 	Menu, %addMenu%, Add,% flag ? "规则" : "规则`tF9", LVRule
 	Menu, %addMenu%, Icon,% flag ? "规则" : "规则`tF9", SHELL32.dll,166
+	Menu, %addMenu%, Add,% flag ? "设置" : "设置`tF10", LVSet
+	Menu, %addMenu%, Icon,% flag ? "设置" : "设置`tF10", SHELL32.dll,22
 }
 LVRun:
 	menuItem:="启动"
@@ -508,6 +510,7 @@ return
 	F7::gosub,LVEdit
 	F8::gosub,LVImport
 	F9::gosub,LVRule
+	F10::gosub,LVSet
 #If
 GuiContextMenu:
 	If (A_GuiControl = "RunAnyLV") {
@@ -540,6 +543,25 @@ return
 SetFilePath:
 	FileSelectFile, filePath, 3, , 请选择导入的启动项, (*.ahk;*.exe)
 	GuiControl, 2:, vFilePath, %filePath%
+return
+LVSet:
+	Gui,S:Destroy
+	Gui,S:Margin,50,30
+	Gui,S:Add,Checkbox,Checked%AutoRun% xm yp+30 h30 vvAutoRun,开机自动启动
+	Gui,S:Add, Button,Default xm y+30 w75 GLVSetSave,保存(&Y)
+	Gui,S:Add, Button,x+10 w75 GLVCancel,取消(&C)
+	Gui,S:Show, , %RunAnyCtrl% 设置选项
+return
+LVSetSave:
+	Gui,S:Submit
+	if(vAutoRun!=AutoRun){
+		AutoRun:=vAutoRun
+		if(AutoRun){
+			RegWrite, REG_SZ, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl, %A_ScriptFullPath%
+		}else{
+			RegDelete, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
+		}
+	}
 return
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 ;~;[规则配置]
