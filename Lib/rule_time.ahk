@@ -1,4 +1,8 @@
 ﻿/*
+【RunAnyCtrl时间规则函数库】
+*/
+global rule_time_version:="1.3.4"
+/*
 验证星期几(1-7)，1表示星期天 @hui-Zz
 */
 rule_today_week(week){

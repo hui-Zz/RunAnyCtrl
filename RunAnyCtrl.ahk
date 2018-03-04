@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.0 @2018.03.02
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.3.4
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,10 +17,13 @@ SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 SetTitleMatchMode,2	;~窗口标题模糊匹配
 DetectHiddenWindows,On	;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
+global RunAnyCtrl_version:="1.3.4"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
 global menuItem:=""
+global PluginsList:="RunAnyCtrlFunc,rule_common,rule_time"
+#Include *i %A_ScriptDir%\Lib\RunAnyCtrlFunc.ahk
 Gosub,Var_Set		;~参数初始化
 if(!ahkExePath || !FileExist(ahkExePath)){
 	RegRead, regFileExt, HKEY_CLASSES_ROOT, .ahk
@@ -61,7 +64,7 @@ Gui,Add, Listview, xm w800 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|
 GuiControl, -Redraw, RunAnyLV
 For runn, runv in runitemList
 {
-	runStatus:=Check_IsRun(runn, runv) ? "启动" : "x"
+	runStatus:=Check_IsRun(runv) ? "启动" : "x"
 	LV_Add("", runn, autorunList[runn] ? "是" : "x", hiderunList[runn] ? "是" : "x", closerunList[runn] ? "是" : "x", repeatrunList[runn] ? "是" : "x", mostrunList[runn], rulerunList[runn] ? "是" : "x", rulerunList[runn] ? rulelogicList[runn] ? "与" : "或" : "x", rulenumberList[runn], ruletimeList[runn], runStatus, runv)
 }
 GuiControl, +Redraw, RunAnyLV
@@ -69,7 +72,7 @@ LVMenu("LVMenu")
 LVMenu("ahkGuiMenu")
 Gui, Menu, ahkGuiMenu
 LVModifyCol(38,2,3,4,5,7,8)  ; 根据内容自动调整每列的大小.
-Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018.03.02
+Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018 %RunAnyCtrl_version%
 return
 
 LVMenu(addMenu){
@@ -92,10 +95,10 @@ LVMenu(addMenu){
 	Menu, %addMenu%, Icon,% flag ? "删除" : "删除`tDel", SHELL32.dll,132
 	Menu, %addMenu%, Add,% flag ? "导入" : "导入`tF8", LVImport
 	Menu, %addMenu%, Icon,% flag ? "导入" : "导入`tF8", SHELL32.dll,46
-	Menu, %addMenu%, Add,% flag ? "规则" : "规则`tF9", LVRule
-	Menu, %addMenu%, Icon,% flag ? "规则" : "规则`tF9", SHELL32.dll,166
-	Menu, %addMenu%, Add,% flag ? "设置" : "设置`tF10", LVSet
-	Menu, %addMenu%, Icon,% flag ? "设置" : "设置`tF10", SHELL32.dll,22
+	Menu, %addMenu%, Add,% flag ? "设置" : "设置`tF9", LVSet
+	Menu, %addMenu%, Icon,% flag ? "设置" : "设置`tF9", SHELL32.dll,22
+	Menu, %addMenu%, Add,% flag ? "规则" : "规则`tF10", LVRule
+	Menu, %addMenu%, Icon,% flag ? "规则" : "规则`tF10", SHELL32.dll,166
 }
 LVRun:
 	menuItem:="启动"
@@ -509,8 +512,8 @@ return
 	Del::gosub,LVDel
 	F7::gosub,LVEdit
 	F8::gosub,LVImport
-	F9::gosub,LVRule
-	F10::gosub,LVSet
+	F9::gosub,LVSet
+	F10::gosub,LVRule
 #If
 GuiContextMenu:
 	If (A_GuiControl = "RunAnyLV") {
@@ -615,11 +618,22 @@ LVRuleConfig:
 	Gui,P:Add, Edit, xm+60 yp-3 w225 vvRuleFunction, %RuleFunction%
 	Gui,P:Add, DropDownList, x+5 yp+2 w220 vvRuleDLL GDropDownRuleList
 	Gui,P:Add, Button, xm-5 yp+30 w60 h60 GSetRulePath,规则路径 可自动识别函数名
-	Gui,P:Add, Edit, xm+60 yp w450 r3 vvRulePath, %RulePath%
-	Gui,P:Add, Button,Default xm+100 y+10 w75 GLVRuleSave,保存(&Y)
+	Gui,P:Add, Edit, xm+60 yp w450 r3 vvRulePath GRulePathChange, %RulePath%
+	Gui,P:Add, Button,Default xm+180 y+10 w75 GLVRuleSave,保存(&Y)
 	Gui,P:Add, Button,x+10 w75 GLVCancel,取消(&C)
 	Gui,P:Show, , %RunAnyCtrl% 规则编辑
-	KnowAhkFuncZz(RulePath,RuleFunction)
+	funcnameStr:=KnowAhkFuncZz(RulePath)
+	GuiControl, P:, vRuleDLL, |
+	GuiControl, P:, vRuleDLL, %funcnameStr%
+	funcNameChoose:=1
+	loop, parse, funcnameStr, |
+	{
+		if(RuleFunction=A_LoopField){
+			funcNameChoose:=A_Index
+			break
+		}
+	}
+	GuiControl, P:Choose, vRuleDLL, %funcNameChoose%
 return
 LVRuleMinus:
 	DelRowList:=""
@@ -640,6 +654,8 @@ LVRuleMinus:
 			DelRowList:=RowNumber . ":" . DelRowList
 			IniDelete, %iniFile%, rule_item, %RuleName%
 			IniDelete, %iniFile%, func_item, %RuleName%
+			;删除所有正在使用此规则的关联配置
+			Change_Rule_Name(RuleName,"")
 			gosub,Rule_Item_Read
 			;~ 判断如果所有规则都没用到此脚本，则去除引用
 			NoQuote:=true
@@ -689,6 +705,8 @@ LVRuleSave:
 		if(RuleName!=vRuleName){
 			IniDelete, %iniFile%, rule_item, %RuleName%
 			IniDelete, %iniFile%, func_item, %RuleName%
+			;~ 变更所有正在使用此规则的启动项中关联规则名称
+			Change_Rule_Name(RuleName,vRuleName)
 		}
 		if(!pluginsList[includeStr . vRulePath]){
 			oldRule:=includeStr . RulePath
@@ -717,38 +735,25 @@ listrule:
     }
 return
 SetRulePath:
-	FileSelectFile, rulePath, 3, , 请选择导入的AutoHotkey脚本文件, (*.ahk)
+	FileSelectFile, rulePath, 3, , 请选择要使用的的AutoHotkey规则脚本, (*.ahk)
+	if(rulePath){
+		Gui,P:Submit, NoHide
+		Get_Rule_Func_Name(rulePath,vRuleFunction)
+		GuiControl, P:, vRulePath, %rulePath%
+	}
+return
+RulePathChange:
 	Gui,P:Submit, NoHide
-	KnowAhkFuncZz(rulePath,vRuleFunction)
-	GuiControl, P:, vRulePath, %rulePath%
+	Get_Rule_Func_Name(vRulePath,vRuleFunction)
 return
 DropDownRuleList:
 	Gui,P:Submit, NoHide
 	GuiControl, P:, vRuleFunction, %vRuleDLL%
 return
-;~ 【自动识别AHK脚本中的函数 by hui-Zz】
-KnowAhkFuncZz(ahkPath,vRuleFunction:=""){
-	StringReplace, checkPath, ahkPath,`%A_ScriptDir`%, %A_ScriptDir%
-	if(FileExist(checkPath)){
-		funcName:=funcName2:=funcnameStr:=""
-		funcIndex2:=0
-		getFuncNameReg:="iS)^\t*\s*(?!if)([^\s\.,:=\(]*)\(.*?\)\t*\s*"
-		getFuncNameReg1:=getFuncNameReg . "\{"
-		getFuncNameReg2:=getFuncNameReg . "$"
-		Loop, read, %checkPath%
-		{
-			if(RegExMatch(A_LoopReadLine,getFuncNameReg1)){
-				funcnameStr.=RegExReplace(A_LoopReadLine,getFuncNameReg1,"$1") . "|"
-			}
-			if(funcName2 && A_Index=funcIndex2 && RegExMatch(A_LoopReadLine,"^\t*\s*\{\t*\s*$")){
-				funcnameStr.=funcName2 . "|"
-			}
-			if(RegExMatch(A_LoopReadLine,getFuncNameReg2)){
-				funcName2:=RegExReplace(A_LoopReadLine,getFuncNameReg2,"$1")
-				funcIndex2:=A_Index+1
-			}
-		}
-		stringtrimright, funcnameStr, funcnameStr, 1
+;[自动根据规则脚本的路径来变更函数下拉选择框和空规则函数]
+Get_Rule_Func_Name(rulePath,vRuleFunction){
+	if(rulePath){
+		funcnameStr:=KnowAhkFuncZz(rulePath)
 		GuiControl, P:, vRuleDLL, |
 		GuiControl, P:, vRuleDLL, %funcnameStr%
 		GuiControl, P:Choose, vRuleDLL, 1
@@ -757,7 +762,7 @@ KnowAhkFuncZz(ahkPath,vRuleFunction:=""){
 		}
 	}
 }
-;~ 判断脚本当前状态
+;[判断脚本当前状态]
 LVStatusChange(RowNumber,FileStatus,lvItem){
 	item:=lvItem
 	if(FileStatus="挂起" && lvItem="暂停"){
@@ -772,23 +777,7 @@ LVStatusChange(RowNumber,FileStatus,lvItem){
 	LV_Modify(RowNumber, "", , , , , , , , , , , lvItem)
 	LVModifyCol(38,2,3,4,5,7,8)  ; 根据内容自动调整每列的大小.
 }
-;~ 判断启动项当前是否已经运行
-Check_IsRun(runn, runv){
-	runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
-	SplitPath, runValue, name,, ext  ; 获取扩展名
-	if(ext="ahk"){
-		IfWinExist, %runv% ahk_class AutoHotkey
-		{
-			return true
-		}
-	}else if(name){
-		Process,Exist,%name%
-		if ErrorLevel
-			return true
-	}
-	return false
-}
-;~ 自动调整列表宽度
+;[自动调整列表宽度]
 LVModifyCol(width, colList*){
 	LV_ModifyCol()  ; 根据内容自动调整每列的大小.
 	for index,col in colList
@@ -797,7 +786,40 @@ LVModifyCol(width, colList*){
 		LV_ModifyCol(col, "center")
 	}
 }
-;替换嵌入脚本的文本，需要重启生效
+;[变更所有正在使用此规则的启动项中关联规则名称]
+Change_Rule_Name(rname,rnew){
+	For runn, runv in runitemList
+	{
+		writeFalg:=false
+		ruleContent:=""
+		IniRead,runRuleVar,%iniFile%,%runn%
+		Loop, parse, runRuleVar, `n, `r
+		{
+			runRuleSplit:=""
+			Loop, parse, A_LoopField, |
+			{
+				if(A_Index=1 && A_LoopField=rname){
+					writeFalg:=true
+					if(rnew){
+						runRuleSplit.=rnew . "|"
+						continue
+					}else{
+						break
+					}
+				}
+				runRuleSplit.=A_LoopField . "|"
+			}
+			stringtrimright, runRuleSplit, runRuleSplit, 1
+			ruleContent.=runRuleSplit . "`n"
+		}
+		if(writeFalg){
+			IniDelete, %iniFile%, %runn%
+			stringtrimright, ruleContent, ruleContent, 1
+			IniWrite, %ruleContent%, %iniFile%, %runn%
+		}
+	}
+}
+;[替换嵌入脚本的文本，需要重启生效]
 Plugins_Replace(oldPlugins,newPlugins:=""){
 	content:=""
 	FileRead, pluginsContent, %pluginsFile%
@@ -830,24 +852,28 @@ Reg_Set(sz,var){
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 Rule_Effect:
 	global runIndex:=Object(),funcEffect:=Object()
-	For runn, runv in runitemList	;循环启动项
-	{
-		if(rulerunList[runn]){		;需要执行规则
-			;已在运行且设定为不重复启动
-			if(repeatrunList[runn] && Check_IsRun(runn, runv))
-				continue
-			;是否设定运行项最多启动次数
-			if(mostrunList[runn] && !mostrunIndex[runn])
-				mostrunIndex[runn]:=0
-			if((rulenumberList[runn] && rulenumberList[runn] > 1) || (rulenumberList[runn] > 0 && ruletimeList[runn])){
-				runIndex[runn]:=0	;规则定时器初始计数为0
-				funcEffect%runn%:=Func("Func_Effect").Bind(runn, runv)	;规则定时器
-				ruleTime:=ruletimeList[runn] ? ruletimeList[runn] : 1		;规则定时器间隔时间(毫秒)
-				SetTimer,% funcEffect%runn%, %ruleTime%
-			}else{
-				Func_Effect(runn, runv)
+	try{
+		For runn, runv in runitemList	;循环启动项
+		{
+			if(rulerunList[runn]){		;需要执行规则
+				;已在运行且设定为不重复启动
+				if(repeatrunList[runn] && Check_IsRun(runv))
+					continue
+				;是否设定运行项最多启动次数
+				if(mostrunList[runn] && !mostrunIndex[runn])
+					mostrunIndex[runn]:=0
+				if((rulenumberList[runn] && rulenumberList[runn] > 1) || (rulenumberList[runn] > 0 && ruletimeList[runn])){
+					runIndex[runn]:=0	;规则定时器初始计数为0
+					funcEffect%runn%:=Func("Func_Effect").Bind(runn, runv)	;规则定时器
+					ruleTime:=ruletimeList[runn] ? ruletimeList[runn] : 1		;规则定时器间隔时间(毫秒)
+					SetTimer,% funcEffect%runn%, %ruleTime%
+				}else{
+					Func_Effect(runn, runv)
+				}
 			}
 		}
+	} catch e {
+			MsgBox,16,规则启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
 	}
 return
 /*
@@ -913,25 +939,29 @@ Func_Effect(runn, runv){
 	}
 	runIndex[runn]++	;规则定时器运行计数+1
 	;规则运行计数达到最大循环次数 || 已在运行且设定为不重复启动 || 启动项已达到最多运行次数 => 结束定时器
-	if((runIndex[runn] && runIndex[runn] >= rulenumberList[runn]) || (repeatrunList[runn] && Check_IsRun(runn, runv)) || (mostrunList[runn] && mostrunIndex[runn] >= mostrunList[runn])){
+	if((runIndex[runn] && runIndex[runn] >= rulenumberList[runn]) || (repeatrunList[runn] && Check_IsRun(runv)) || (mostrunList[runn] && mostrunIndex[runn] >= mostrunList[runn])){
 		try SetTimer,% funcEffect%runn%, Off
 	}
 }
 ;~;[自动启动生效]
 AutoRun_Effect:
-	For runn, runv in runitemList	;循环启动项
-	{
-		;需要自动启动项并且不用规则执行的项
-		if(autorunList[runn] && !rulerunList[runn]){
-			;已在运行且设定为不重复启动
-			if(repeatrunList[runn] && Check_IsRun(runn, runv))
-				continue
-			;设定为隐藏启动
-			if(hiderunList[runn])
-				Run,%runv%,, hide
-			else
-				Run,%runv%,, UseErrorLevel
+	try {
+		For runn, runv in runitemList	;循环启动项
+		{
+			;需要自动启动项并且不用规则执行的项
+			if(autorunList[runn] && !rulerunList[runn]){
+				;已在运行且设定为不重复启动
+				if(repeatrunList[runn] && Check_IsRun(runv))
+					continue
+				;设定为隐藏启动
+				if(hiderunList[runn])
+					Run,%runv%,, hide
+				else
+					Run,%runv%,, UseErrorLevel
+			}
 		}
+	} catch e {
+			MsgBox,16,自动启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
 	}
 return
 ;~;[随RunAnyCtrl自动关闭]
@@ -1154,6 +1184,7 @@ MenuTray:
 		Menu,Tray,Icon,%ahkExePath%,2
 	Menu,Tray,add,启动管理(&Z),LV_Show
 	Menu,Tray,add,修改配置(&E),LV_Ini
+	Menu,Tray,add,检查更新(&U),Github_Update
 	Menu,Tray,add
 	Menu,Tray,add,重启(&R),Menu_Reload
 	Menu,Tray,add,挂起(&S),Menu_Suspend
@@ -1164,6 +1195,9 @@ MenuTray:
 return
 LV_Ini:
 	Run,%iniFile%
+return
+Github_Update:
+	Run,%RunAnyCtrl%_Update.ahk
 return
 Menu_Reload:
 	Reload
