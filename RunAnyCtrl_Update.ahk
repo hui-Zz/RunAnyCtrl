@@ -4,7 +4,7 @@ updateNeed:=Object()
 notnewest:=true
 RunAnyGithubDir:="https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master"
 DownList:=["RunAnyCtrl","RunAnyCtrlFunc","rule_common","rule_time"]
-;~ URLDownloadToFile,%RunAnyGithubDir%/RunAnyCtrl.ahk ,%A_Temp%\temp_RunAnyCtrl.ahk
+URLDownloadToFile,%RunAnyGithubDir%/RunAnyCtrl.ahk ,%A_Temp%\temp_RunAnyCtrl.ahk
 ;[从RunAnyCtrl中取出需要更新的插件列表]
 PluginsReg=iS)^\t*\s*global PluginsList:="(.*)"
 Loop, read, %A_Temp%\temp_RunAnyCtrl.ahk
@@ -21,7 +21,7 @@ For di, dname in PluginsList
 {
 	dnameahk:=dname . ".ahk"
 	dnamePath:=(dname="RunAnyCtrl") ? "/" dnameahk: "/Lib/" dnameahk
-	;~ URLDownloadToFile,%RunAnyGithubDir%%dnamePath% ,%A_Temp%\temp_%dnameahk%
+	URLDownloadToFile,%RunAnyGithubDir%%dnamePath% ,%A_Temp%\temp_%dnameahk%
 	versionStr:=""
 	versionReg=iS)^\t*\s*global %dname%_version:="([\d\.]*)"
 	Loop, read, %A_ScriptDir%%dnamePath%
@@ -87,6 +87,7 @@ IfMsgBox Ok
 			dnamePath:=(dname="RunAnyCtrl") ? "/" dnameahk: "/Lib/" dnameahk
 			FileCopy, %A_Temp%\temp_%dnameahk%, %A_ScriptDir%%dnamePath%, 1
 		}
+		FileDelete, %A_Temp%\temp_%dnameahk%
 	}
 	IfNotExist,%A_ScriptDir%\Lib\RunAnyCtrl.ico
 	{

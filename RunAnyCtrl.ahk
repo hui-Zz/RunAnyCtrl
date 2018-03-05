@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.3.4
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.3.5
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 SetTitleMatchMode,2	;~窗口标题模糊匹配
 DetectHiddenWindows,On	;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="1.3.4"
+global RunAnyCtrl_version:="1.3.5"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -240,7 +240,9 @@ Gui,2:Add, CheckBox, x+10 yp Checked%FileCloseRun% vvFileCloseRun, 随RunAnyCtrl
 Gui,2:Add, Text, xm+10 y+10 w85, 最多启动次数：
 Gui,2:Add, Edit, x+2 yp-3 Number w63 h20 vvFileMostRun, %FileMostRun%
 Gui,2:Add, CheckBox, x+20 yp+3 Checked%FileRepeatRun% vvFileRepeatRun, 不重复启动
-
+if(!IsFunc("rule_IsRun")){
+	Gui,2:Add, Text, x+2 yp CRed w50, (不可用)
+}
 Gui,2:Add, GroupBox,xm y+15 w500 h350,规则项设置
 Gui,2:Add, CheckBox, xm+10 yp+25 w130 Checked%FileRuleRun% vvFileRuleRun, 使用规则自动启动
 Gui,2:Add, Radio, x+20 yp Checked%FileRuleLogic1% vvFileRuleLogic1, 与(全部匹配)(&A)
@@ -837,6 +839,12 @@ Plugins_Replace(oldPlugins,newPlugins:=""){
 	FileDelete,%pluginsFile%
 	FileAppend,%content%,%pluginsFile%
 }
+Check_IsRun(runv){
+	return IsFunc("rule_IsRun") ? Func("rule_IsRun").Call(runv) : false
+}
+KnowAhkFuncZz(RulePath){
+	return IsFunc("getAhkFuncZz") ? Func("getAhkFuncZz").Call(RulePath) : ""
+}
 Var_Read(rValue,defVar=""){
 	RegRead, regVar, HKEY_CURRENT_USER, SOFTWARE\%RunAnyCtrl%, %rValue%
 	if(regVar)
@@ -986,7 +994,7 @@ Var_Set:
 	;~;[RunAnyCtrl设置参数]
 	RegRead, AutoRun, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 	AutoRun:=AutoRun ? 1 : 0
-	global KeyList:=["run_item","rule_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item","func_item"]
+	global KeyList:=["run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
 	global mostrunIndex:=Object()
 	IfNotExist,%A_ScriptDir%\Lib
 	{
@@ -996,8 +1004,8 @@ Var_Set:
 	{
 		initIniContent:=""
 		initRun:="RunAnyCtrl=https://github.com/hui-Zz/RunAnyCtrl"
-		initRule:="网络连接=%A_ScriptDir%\Lib\rule_common.ahk`n电脑名=%A_ScriptDir%\Lib\rule_common.ahk`n时间点=%A_ScriptDir%\Lib\rule_time.ahk`n星期几=%A_ScriptDir%\Lib\rule_time.ahk"
-		initFunc:="网络连接=rule_network`n电脑名=rule_computer_name`n时间点=rule_today_hour`n星期几=rule_today_week"
+		initRule:="网络连接=%A_ScriptDir%\Lib\rule_common.ahk`n电脑名=%A_ScriptDir%\Lib\rule_common.ahk`nWiFi名(静默)=%A_ScriptDir%\Lib\rule_common.ahk`n运行状态=%A_ScriptDir%\Lib\rule_common.ahk`n时间点=%A_ScriptDir%\Lib\rule_time.ahk`n星期几=%A_ScriptDir%\Lib\rule_time.ahk"
+		initFunc:="网络连接=rule_network`n电脑名=rule_computer_name`nWiFi名(静默)=rule_wifi_silence`n运行状态=rule_IsRun`n时间点=rule_today_hour`n星期几=rule_today_week"
 		For ki, kv in KeyList
 		{
 			initIniContent.="[" kv "]`n"

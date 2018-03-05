@@ -1,13 +1,13 @@
 ﻿/*
 【RunAnyCtrl特殊函数调用库】
 */
-global RunAnyCtrlFunc_version:="1.3.4"
+global RunAnyCtrlFunc_version:="1.3.5"
 /*
 【自动识别AHK脚本中的函数 by hui-Zz】（RunAnyCtrl使用中，勿删慎改）
 ahkPath AHK脚本路径
 return AHK脚本所有函数用|分隔的字符串,没有返回""
 */
-KnowAhkFuncZz(ahkPath){
+getAhkFuncZz(ahkPath){
 	funcName:=funcnameStr:=""
 	StringReplace, checkPath, ahkPath,`%A_ScriptDir`%, %A_ScriptDir%
 	if(FileExist(checkPath)){

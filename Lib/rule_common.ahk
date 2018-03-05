@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl公共规则函数库】
 */
-global rule_common_version:="1.3.4"
+global rule_common_version:="1.3.5"
 rule_true(){
 	return true
 }
@@ -12,7 +12,7 @@ rule_false(){
 【判断启动项当前是否已经运行】（RunAnyCtrl使用中，勿删慎改）
 runNamePath 进程名或者启动项路径
 */
-Check_IsRun(runNamePath){
+rule_IsRun(runNamePath){
 	runValue:=RegExReplace(runNamePath,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 	SplitPath, runValue, name,, ext  ; 获取扩展名
 	if(ext="ahk"){
@@ -41,7 +41,7 @@ rule_network(lpszUrl="http://www.baidu.com"){
 ssid wifi名称
 */
 rule_wifi_twinkle(ssid){
-	cmdResult:=cmdReturn("netsh wlan show interface | findstr ""`\<SSID""")
+	cmdResult:=IsFunc("cmdReturn") ? Func("cmdReturn").Call("netsh wlan show interface | findstr ""`\<SSID""") : ""
 	return RegExMatch(cmdResult, "\s*SSID\s*:\s" . ssid . "$") ? true : false
 }
 /*
@@ -49,7 +49,7 @@ rule_wifi_twinkle(ssid){
 ssid wifi名称
 */
 rule_wifi_silence(ssid){
-	cmdResult:=cmdSilenceReturn("netsh wlan show interface | findstr ""`\<SSID""")
+	cmdResult:=IsFunc("cmdSilenceReturn") ? Func("cmdSilenceReturn").Call("netsh wlan show interface | findstr ""`\<SSID""") : ""
 	return RegExMatch(cmdResult, "\s*SSID\s*:\s" . ssid . "$") ? true : false
 }
 /*
