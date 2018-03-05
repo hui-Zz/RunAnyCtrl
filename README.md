@@ -7,4 +7,4 @@
 
 ---
 
-![RunAnyCtrl使用说明](https://raw.githubusercontent.com/hui-Zz/RunAny/master/RunAnyCtrl使用说明.png)
+![RunAnyCtrl使用说明](https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master/RunAnyCtrl使用说明.png)
