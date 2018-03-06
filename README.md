@@ -14,3 +14,8 @@
 ## RunAnyCtrl使用说明
 
 ![RunAnyCtrl使用说明](https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master/RunAnyCtrl使用说明.png)
+
+
+**请作者喝一杯咖啡：**
+
+![支付宝](https://raw.githubusercontent.com/hui-Zz/RunAny/master/支持RunAny.jpg)
