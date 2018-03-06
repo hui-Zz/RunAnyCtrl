@@ -75,7 +75,7 @@ For dname, msg in updateMsg
 if(notnewest){
 	msgResult.="RunAnyCtrl已经是最新版本。"
 }else{
-	msgResult.="RunAnyCtrl是否更新到最新版本？`n覆盖老版本文件，如有过修改请注意备份"
+	msgResult.="RunAnyCtrl是否更新到最新版本？`n覆盖老版本文件，如有过修改请注意备份`n更新后重启RunAnyCtrl生效"
 }
 MsgBox, 33, RunAnyCtrl更新, %msgResult%
 IfMsgBox Ok
