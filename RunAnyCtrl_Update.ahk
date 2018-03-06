@@ -1,4 +1,8 @@
-﻿SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
+﻿/*
+【RunAnyCtrl检查更新Github上的最新版本】
+*/
+global RunAnyCtrl_update_version:="1.3.5"
+SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 updateMsg:=Object()
 updateNeed:=Object()
 notnewest:=true
@@ -71,7 +75,7 @@ For dname, msg in updateMsg
 if(notnewest){
 	msgResult.="RunAnyCtrl已经是最新版本。"
 }else{
-	msgResult.="RunAnyCtrl是否更新到最新版本？"
+	msgResult.="RunAnyCtrl是否更新到最新版本？`n覆盖老版本文件，如有过修改请注意备份"
 }
 MsgBox, 33, RunAnyCtrl更新, %msgResult%
 IfMsgBox Ok

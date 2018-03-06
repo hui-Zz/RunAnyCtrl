@@ -1018,8 +1018,9 @@ Var_Set:
 		IniWrite, 网络连接|1|, %iniFile%, RunAnyCtrl
 		TrayTip,,RunAnyCtrl初始化成功！点击任务栏图标设置，可自由定制规则启动程序（如有网络打开网页）,3,1
 	}
-	IfNotExist,%pluginsFile%
-	{
+	if(FileExist(pluginsFile))
+		FileRead, pluginsVar, %pluginsFile%
+	if(!FileExist(pluginsFile) || !pluginsVar){
 		TrayTip,,RunAnyCtrl初始化生成导入规则函数%A_ScriptDir%\Lib\RunAnyCtrlPlugins.ahk,3,1
 		content:=""
 		commonAhk:="\Lib\rule_common.ahk"
@@ -1192,6 +1193,7 @@ MenuTray:
 		Menu,Tray,Icon,%ahkExePath%,2
 	Menu,Tray,add,启动管理(&Z),LV_Show
 	Menu,Tray,add,修改配置(&E),LV_Ini
+	Menu,Tray,add
 	Menu,Tray,add,检查更新(&U),Github_Update
 	Menu,Tray,add
 	Menu,Tray,add,重启(&R),Menu_Reload
@@ -1205,6 +1207,10 @@ LV_Ini:
 	Run,%iniFile%
 return
 Github_Update:
+	if(!FileExist(A_ScriptDir "\" RunAnyCtrl "_Update.ahk")){
+		RunAnyGithubDir:="https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master"
+		URLDownloadToFile, %RunAnyGithubDir%/%RunAnyCtrl%_Update.ahk, %A_ScriptDir%\%RunAnyCtrl%_Update.ahk
+	}
 	Run,%RunAnyCtrl%_Update.ahk
 return
 Menu_Reload:
