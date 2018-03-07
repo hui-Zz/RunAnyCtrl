@@ -6,16 +6,16 @@
 ║ 讨论QQ群：[246308937]、3222783、493194474
 ╚══════════════════════════════════════════════════
 */
-#NoEnv					;~不检查空变量为环境变量
-#Persistent			;~让脚本持久运行
-#WinActivateForce		;~强制激活窗口
-#SingleInstance,Force	;~运行替换旧实例
-ListLines,Off			;~不显示最近执行的脚本行
-CoordMode,Menu			;~相对于整个屏幕
-SetBatchLines,-1		;~脚本全速执行
-SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
-SetTitleMatchMode,2	;~窗口标题模糊匹配
-DetectHiddenWindows,On	;~显示隐藏窗口
+#NoEnv                  ;~不检查空变量为环境变量
+#Persistent             ;~让脚本持久运行
+#WinActivateForce       ;~强制激活窗口
+#SingleInstance,Force   ;~运行替换旧实例
+ListLines,Off           ;~不显示最近执行的脚本行
+CoordMode,Menu          ;~相对于整个屏幕
+SetBatchLines,-1        ;~脚本全速执行
+SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
+SetTitleMatchMode,2         ;~窗口标题模糊匹配
+DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
 global RunAnyCtrl_version:="1.3.5"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
@@ -956,8 +956,8 @@ AutoRun_Effect:
 	try {
 		For runn, runv in runitemList	;循环启动项
 		{
-			;需要自动启动项并且不用规则执行的项
-			if(autorunList[runn] && !rulerunList[runn]){
+			;需要自动启动的项
+			if(autorunList[runn]){
 				;已在运行且设定为不重复启动
 				if(repeatrunList[runn] && Check_IsRun(runv))
 					continue
