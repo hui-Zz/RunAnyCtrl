@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.3.7
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.3.29
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="1.3.7"
+global RunAnyCtrl_version:="1.3.29"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -552,13 +552,17 @@ return
 LVSet:
 	Gui,S:Destroy
 	Gui,S:Margin,50,30
-	Gui,S:Add,Checkbox,Checked%AutoRun% xm yp+30 h30 vvAutoRun,开机自动启动
-	Gui,S:Add, Button,Default xm y+30 w75 GLVSetSave,保存(&Y)
+	Gui,S:Add, Checkbox,Checked%AutoRun% xm yp+10 h30 vvAutoRun,开机自动启动
+	Gui,S:Add, GroupBox,xm-10 y+10 w225 h55,RunAnyCtrl配置自定义热键 %ConfigHotKey%
+	Gui,S:Add, Hotkey,xm yp+20 w150 vvConfigKey,%ConfigKey%
+	Gui,S:Add, Checkbox,Checked%ConfigWinKey% xm+155 yp+3 vvConfigWinKey,Win
+	Gui,S:Add, Button,Default xm+15 y+30 w75 GLVSetSave,保存(&Y)
 	Gui,S:Add, Button,x+10 w75 GLVCancel,取消(&C)
 	Gui,S:Show, , %RunAnyCtrl% 设置选项
 return
 LVSetSave:
 	Gui,S:Submit
+	reloadFlag:=false
 	if(vAutoRun!=AutoRun){
 		AutoRun:=vAutoRun
 		if(AutoRun){
@@ -566,7 +570,18 @@ LVSetSave:
 		}else{
 			RegDelete, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 		}
+		reloadFlag:=true
 	}
+	if(vConfigKey!=ConfigKey){
+		IniWrite,%vConfigKey%,%iniFile%,run_any_ctrl_config,ConfigKey
+		reloadFlag:=true
+	}
+	if(vConfigWinKey!=ConfigWinKey){
+		IniWrite,%vConfigWinKey%,%iniFile%,run_any_ctrl_config,ConfigWinKey
+		reloadFlag:=true
+	}
+	if(reloadFlag)
+		Reload
 return
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 ;~;[规则配置]
@@ -881,7 +896,7 @@ Rule_Effect:
 			}
 		}
 	} catch e {
-			MsgBox,16,规则启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
+			MsgBox,16,规则启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
 	}
 return
 /*
@@ -969,7 +984,7 @@ AutoRun_Effect:
 			}
 		}
 	} catch e {
-			MsgBox,16,自动启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
+			MsgBox,16,自动启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
 	}
 return
 ;~;[随RunAnyCtrl自动关闭]
@@ -994,7 +1009,11 @@ Var_Set:
 	;~;[RunAnyCtrl设置参数]
 	RegRead, AutoRun, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 	AutoRun:=AutoRun ? 1 : 0
-	global KeyList:=["run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
+	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
+	IniRead, ConfigKey,%iniFile%, run_any_ctrl_config, ConfigKey
+	IniRead, ConfigWinKey,%iniFile%, run_any_ctrl_config, ConfigWinKey
+	ConfigHotKey:=ConfigWinKey ? "#" . ConfigKey : ConfigKey
+	try Hotkey,%ConfigHotKey%,LV_Show,On
 	global mostrunIndex:=Object()
 	IfNotExist,%A_ScriptDir%\Lib
 	{

@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl特殊函数调用库】
 */
-global RunAnyCtrlFunc_version:="1.3.5"
+global RunAnyCtrlFunc_version:="1.3.11"
 /*
 【自动识别AHK脚本中的函数 by hui-Zz】（RunAnyCtrl使用中，勿删慎改）
 ahkPath AHK脚本路径
@@ -54,7 +54,7 @@ cmdSilenceReturn(command){
 	shell.run("%Temp%\RunAnyCtrlCMD.bat",0)
 	Loop,100
 	{
-		FileRead, CMDReturn, %A_Temp%\RunAnyCtrlCMD.txt
+		try FileRead, CMDReturn, %A_Temp%\RunAnyCtrlCMD.txt
 		if(CMDReturn)
 			break
 		Sleep,20
