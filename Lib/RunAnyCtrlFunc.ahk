@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl特殊函数调用库】
 */
-global RunAnyCtrlFunc_version:="1.3.11"
+global RunAnyCtrlFunc_version:="1.4.8"
 /*
 【自动识别AHK脚本中的函数 by hui-Zz】（RunAnyCtrl使用中，勿删慎改）
 ahkPath AHK脚本路径
@@ -47,19 +47,21 @@ cmdReturn(command){
 【缓存到批处理中后台静默运行cmd命令，并用缓存文本取到结果值 @hui-Zz】
 */
 cmdSilenceReturn(command){
-	wifiBat:=command . " >> %Temp%\RunAnyCtrlCMD.txt"
-	FileAppend,%wifiBat%,%A_Temp%\RunAnyCtrlCMD.bat
 	CMDReturn:=""
-	shell := ComObjCreate("WScript.Shell")
-	shell.run("%Temp%\RunAnyCtrlCMD.bat",0)
-	Loop,100
-	{
-		try FileRead, CMDReturn, %A_Temp%\RunAnyCtrlCMD.txt
-		if(CMDReturn)
-			break
-		Sleep,20
-	}
-	FileDelete,%A_Temp%\RunAnyCtrlCMD.bat
-	FileDelete,%A_Temp%\RunAnyCtrlCMD.txt
+	try{
+		wifiBat:=command . " >> %Temp%\RunAnyCtrlCMD.txt"
+		FileAppend,%wifiBat%,%A_Temp%\RunAnyCtrlCMD.bat
+		shell := ComObjCreate("WScript.Shell")
+		shell.run("%Temp%\RunAnyCtrlCMD.bat",0)
+		Loop,100
+		{
+			FileRead, CMDReturn, %A_Temp%\RunAnyCtrlCMD.txt
+			if(CMDReturn)
+				break
+			Sleep,20
+		}
+		FileDelete,%A_Temp%\RunAnyCtrlCMD.bat
+		FileDelete,%A_Temp%\RunAnyCtrlCMD.txt
+	}catch{}
 	return CMDReturn
 }

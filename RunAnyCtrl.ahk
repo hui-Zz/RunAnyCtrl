@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.3.29
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.4.10
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="1.3.29"
+global RunAnyCtrl_version:="1.4.10"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -55,23 +55,40 @@ return
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 LV_Show:
 gosub,Run_Item_Read
+global ColumnName:=1
+global ColumnType:=2
+global ColumnAutoRun:=3
+global ColumnHideRun:=4
+global ColumnCloseRun:=5
+global ColumnRepeatRun:=6
+global ColumnMostRun:=7
+global ColumnRuleRun:=8
+global ColumnRuleLogic:=9
+global ColumnRuleNumber:=10
+global ColumnRuleTime:=11
+global ColumnStatus:=12
+global ColumnLastTime:=13
+global ColumnPath:=14
 Gui,Destroy
 Gui,Default
 Gui,+Resize
 Gui,Font, s10, Microsoft YaHei
-Gui,Add, Listview, xm w800 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|自启|隐藏|自关|不重复|最多|规则|匹配|循环|间隔|状态|路径
+Gui,Add, Listview, xm w800 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|类型|自启|隐藏|自关|不重复|最多|规则|匹配|循环|间隔|状态|最后运行时间|路径
 ;~;[读取启动项内容写入列表]
 GuiControl, -Redraw, RunAnyLV
 For runn, runv in runitemList
 {
 	runStatus:=Check_IsRun(runv) ? "启动" : "x"
-	LV_Add("", runn, autorunList[runn] ? "是" : "x", hiderunList[runn] ? "是" : "x", closerunList[runn] ? "是" : "x", repeatrunList[runn] ? "是" : "x", mostrunList[runn], rulerunList[runn] ? "是" : "x", rulerunList[runn] ? rulelogicList[runn] ? "与" : "或" : "x", rulenumberList[runn], ruletimeList[runn], runStatus, runv)
+	runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
+	SplitPath, runValue,,, FileExt  ; 获取文件扩展名.
+	runType:=FileExt ? FileExt : RegExMatch(runv,"iS)([\w-]+://?|www[.]).*") ? "网址" : "未知"
+	LV_Add("", runn, runType, autorunList[runn] ? "是" : "x", hiderunList[runn] ? "是" : "x", closerunList[runn] ? "是" : "x", repeatrunList[runn] ? "是" : "x", mostrunList[runn], rulerunList[runn] ? "是" : "x", rulerunList[runn] ? rulelogicList[runn] ? "与" : "或" : "x", rulenumberList[runn], ruletimeList[runn], runStatus, lasttimeList[runn], runv)
 }
 GuiControl, +Redraw, RunAnyLV
 LVMenu("LVMenu")
 LVMenu("ahkGuiMenu")
 Gui, Menu, ahkGuiMenu
-LVModifyCol(38,2,3,4,5,7,8)  ; 根据内容自动调整每列的大小.
+LVModifyCol(38,ColumnAutoRun,ColumnHideRun,ColumnCloseRun,ColumnRepeatRun,ColumnRuleRun,ColumnRuleLogic)  ; 根据内容自动调整每列的大小.
 Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018 %RunAnyCtrl_version%
 return
 
@@ -144,16 +161,17 @@ LVApply:
 		RowNumber := LV_GetNext(RowNumber)  ; 在前一次找到的位置后继续搜索.
 		if not RowNumber  ; 上面返回零, 所以选择的行已经都找到了.
 			break
-		LV_GetText(FileName, RowNumber, 1)
-		LV_GetText(FileHideRun, RowNumber, 3)
-		LV_GetText(FileStatus, RowNumber, 11)
-		LV_GetText(FilePath, RowNumber, 12)
+		LV_GetText(FileName, RowNumber, ColumnName)
+		LV_GetText(FileHideRun, RowNumber, ColumnHideRun)
+		LV_GetText(FileStatus, RowNumber, ColumnStatus)
+		LV_GetText(FilePath, RowNumber, ColumnPath)
 		if(menuItem="启动"){
 			if(FileHideRun="是")
 				Run,%FilePath%,, hide
 			else
 				Run,%FilePath%,, UseErrorLevel
-			LV_Modify(RowNumber, "", , , , , , , , , , , "启动")
+			LV_Modify(RowNumber, "", , , , , , , , , , , , "启动", A_Now)
+			IniWrite, %A_Now%, %iniFile%, last_run_time, %FileName%
 		}else if(menuItem="编辑"){
 			PostMessage, 0x111, 65401,,, %FilePath% ahk_class AutoHotkey
 		}else if(menuItem="挂起"){
@@ -173,7 +191,7 @@ LVApply:
 				if ErrorLevel
 					runStatus:="x"
 			}
-			LV_Modify(RowNumber, "", , , , , , , , , , , runStatus)
+			LV_Modify(RowNumber, "", , , , , , , , , , , , runStatus)
 		}else if(menuItem="删除"){
 			IfMsgBox Yes
 			{
@@ -207,16 +225,16 @@ if(menuItem="配置"){
 	RunRowNumber := LV_GetNext(0, "F")
 	if not RunRowNumber
 		return
-	LV_GetText(FileName, RunRowNumber, 1)
-	LV_GetText(FileAutoRun, RunRowNumber, 2)
-	LV_GetText(FileHideRun, RunRowNumber, 3)
-	LV_GetText(FileCloseRun, RunRowNumber, 4)
-	LV_GetText(FileRepeatRun, RunRowNumber, 5)
-	LV_GetText(FileMostRun, RunRowNumber, 6)
-	LV_GetText(FileRuleRun, RunRowNumber, 7)
-	LV_GetText(FileRuleNumber, RunRowNumber, 9)
-	LV_GetText(FileRuleTime, RunRowNumber, 10)
-	LV_GetText(FilePath, RunRowNumber, 12)
+	LV_GetText(FileName, RunRowNumber, ColumnName)
+	LV_GetText(FileAutoRun, RunRowNumber, ColumnAutoRun)
+	LV_GetText(FileHideRun, RunRowNumber, ColumnHideRun)
+	LV_GetText(FileCloseRun, RunRowNumber, ColumnCloseRun)
+	LV_GetText(FileRepeatRun, RunRowNumber, ColumnRepeatRun)
+	LV_GetText(FileMostRun, RunRowNumber, ColumnMostRun)
+	LV_GetText(FileRuleRun, RunRowNumber, ColumnRuleRun)
+	LV_GetText(FileRuleNumber, RunRowNumber, ColumnRuleNumber)
+	LV_GetText(FileRuleTime, RunRowNumber, ColumnRuleTime)
+	LV_GetText(FilePath, RunRowNumber, ColumnPath)
 	FileRuleLogic1:=rulelogicList[FileName]
 }
 FileRuleLogic2:=FileRuleLogic1 ? 0 : 1
@@ -319,8 +337,11 @@ LVSave:
 	;[写入配置文件]
 	Gui,1:Default
 	vFileRuleLogic:=vFileRuleLogic1 ? 1 : 0
+	runValue:=RegExReplace(vFilePath,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
+	SplitPath, runValue,,, FileExt  ; 获取文件扩展名.
+	runType:=FileExt ? FileExt : RegExMatch(vFilePath,"iS)([\w-]+://?|www[.]).*") ? "网址" : "未知"
 	if(menuItem="新建"){
-		LV_Add("",vFileName,vFileAutoRun ? "是" : "x",vFileHideRun ? "是" : "x",vFileCloseRun ? "是" : "x",vFileRepeatRun ? "是" : "x",vFileMostRun,vFileRuleRun ? "是" : "x",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "x",vFileRuleNumber,vFileRuleTime,"x",vFilePath)
+		LV_Add("",vFileName,runType,vFileAutoRun ? "是" : "x",vFileHideRun ? "是" : "x",vFileCloseRun ? "是" : "x",vFileRepeatRun ? "是" : "x",vFileMostRun,vFileRuleRun ? "是" : "x",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "x",vFileRuleNumber,vFileRuleTime,"x",,vFilePath)
 	}else{
 		;~ 删除原有启动项其他配置，不包含规则项
 		For ki, kv in KeyList
@@ -329,7 +350,7 @@ LVSave:
 				continue
 			IniDelete, %iniFile%, %kv%, %FileName%
 		}
-		LV_Modify(RunRowNumber,"",vFileName,vFileAutoRun ? "是" : "x",vFileHideRun ? "是" : "x",vFileCloseRun ? "是" : "x",vFileRepeatRun ? "是" : "x",vFileMostRun,vFileRuleRun ? "是" : "x",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "x",vFileRuleNumber,vFileRuleTime,,vFilePath)
+		LV_Modify(RunRowNumber,"",vFileName,runType,vFileAutoRun ? "是" : "x",vFileHideRun ? "是" : "x",vFileCloseRun ? "是" : "x",vFileRepeatRun ? "是" : "x",vFileMostRun,vFileRuleRun ? "是" : "x",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "x",vFileRuleNumber,vFileRuleTime,,,vFilePath)
 	}
 	Gui,2:Destroy
 	GuiControl, 1:+Redraw, RunAnyLV
@@ -362,16 +383,16 @@ LVImport:
 			dir:=A_LoopField
 		}else{
 			fullPath:=dir "\" A_LoopField
-			SplitPath, fullPath, , , , name_no_ext
+			SplitPath, fullPath, , , ext, name_no_ext
 			if(runitemList[name_no_ext]){
 				TrayTip,,导入项中有已存在的相同文件名启动项，不会导入,3,1
 				continue
 			}
-			LV_Add("", name_no_ext, "x", "x", "x", "x", , "x", "x", , ,"x", fullPath)
+			LV_Add("", name_no_ext, ext, "x", "x", "x", "x", , "x", "x", , ,"x", , fullPath)
 			IniWrite, %fullPath%, %iniFile%, run_item, %name_no_ext%
 		}
 	}
-	LVModifyCol(38,2,3,4,5,7,8)  ; 根据内容自动调整每列的大小.
+	LVModifyCol(38,ColumnAutoRun,ColumnHideRun,ColumnCloseRun,ColumnRepeatRun,ColumnRuleRun,ColumnRuleLogic)  ; 根据内容自动调整每列的大小.
 return
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 ;~;[规则函数配置]
@@ -791,8 +812,8 @@ LVStatusChange(RowNumber,FileStatus,lvItem){
 	}
 	if(lvItem="")
 		lvItem:="启动"
-	LV_Modify(RowNumber, "", , , , , , , , , , , lvItem)
-	LVModifyCol(38,2,3,4,5,7,8)  ; 根据内容自动调整每列的大小.
+	LV_Modify(RowNumber, "", , , , , , , , , , , , lvItem)
+	LVModifyCol(38,ColumnAutoRun,ColumnHideRun,ColumnCloseRun,ColumnRepeatRun,ColumnRuleRun,ColumnRuleLogic)  ; 根据内容自动调整每列的大小.
 }
 ;[自动调整列表宽度]
 LVModifyCol(width, colList*){
@@ -907,7 +928,7 @@ Func_Effect(runn, runv){
 	effectFlag:=false
 	For k, v in runruleitemList[runn]	;循环规则内容
 	{
-		if(!v["ruleParam"].MaxIndex()){	;规则没有传参，直接执行规则
+		if(!v["ruleParam"]){	;规则没有传参，直接执行规则
 			effectFlag:=funccallList[v["ruleName"]].Call()
 		}else if(v["ruleParam"].MaxIndex()=1){
 			effectFlag:=v["ruleParam"][1] ? funccallList[v["ruleName"]].Call(v["ruleParam"][1]) : funccallList[v["ruleName"]].Call()
@@ -956,6 +977,8 @@ Func_Effect(runn, runv){
 				Run,%runv%,, hide
 			else
 				Run,%runv%,, UseErrorLevel
+			WriteLastRunTimeFunc%runn%:=Func("Write_Last_Run_Time").Bind(runn,A_Now)	;写运行时间定时器
+			SetTimer,% WriteLastRunTimeFunc%runn%, %WriteLastRunTime%
 			if(mostrunList[runn])
 				mostrunIndex[runn]++
 		}
@@ -981,6 +1004,8 @@ AutoRun_Effect:
 					Run,%runv%,, hide
 				else
 					Run,%runv%,, UseErrorLevel
+				WriteLastRunTimeFunc%runn%:=Func("Write_Last_Run_Time").Bind(runn,A_Now)	;写运行时间定时器
+				SetTimer,% WriteLastRunTimeFunc%runn%, %WriteLastRunTime%
 			}
 		}
 	} catch e {
@@ -1002,6 +1027,10 @@ AutoClose_Effect:
 		}
 	}
 return
+Write_Last_Run_Time(runn,runTime){
+	IniWrite, %runTime%, %iniFile%, last_run_time, %runn%
+	try SetTimer,% WriteLastRunTimeFunc%runn%, Off
+}
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 ;~;[初始化]
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1009,12 +1038,17 @@ Var_Set:
 	;~;[RunAnyCtrl设置参数]
 	RegRead, AutoRun, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 	AutoRun:=AutoRun ? 1 : 0
-	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
+	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","last_run_time","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
+	;配置界面的热键
 	IniRead, ConfigKey,%iniFile%, run_any_ctrl_config, ConfigKey
 	IniRead, ConfigWinKey,%iniFile%, run_any_ctrl_config, ConfigWinKey
 	ConfigHotKey:=ConfigWinKey ? "#" . ConfigKey : ConfigKey
 	try Hotkey,%ConfigHotKey%,LV_Show,On
 	global mostrunIndex:=Object()
+	;等待一段时间(OneDrive同步结束)后写最后运行时间到配置，避免与OneDrive文件版本冲突
+	global WriteLastRunTime:=100
+	IniRead, WriteLastRunTime,%iniFile%, run_any_ctrl_config, WriteLastRunTime, 100
+	;配置文件初始化操作
 	IfNotExist,%A_ScriptDir%\Lib
 	{
 		FileCreateDir, %A_ScriptDir%\Lib
@@ -1067,9 +1101,9 @@ Plugins_Read:
 return
 ;~;[启动项数据]
 Run_Item_Read:
-	;启动名：启动路径列表；自动启动列表；隐藏启动列表；关闭启动列表；不重复启动列表；最多启动次数列表；规则启动列表；规则逻辑列表；循环次数列表；循环间隔时间列表
-	global runitemList:=Object(),autorunList:=Object(),hiderunList:=Object(),closerunList:=Object(),repeatrunList:=Object(),mostrunList:=Object(),rulerunList:=Object(),rulelogicList:=Object(),rulenumberList:=Object(),ruletimeList:=Object()
-	runitemVar:=autorunVar:=hiderunVar:=closerunVar:=repeatrunVar:=mostrunVar:=rulerunVar:=rulelogicVar:=rulenumberVar:=ruletimeVar:=""
+	;参数列表：启动名+（启动路径；自动启动；隐藏启动；关闭启动；不重复启动；最多启动次数；最后运行时间；规则启动；规则逻辑；循环次数；循环间隔时间）
+	global runitemList:=Object(),autorunList:=Object(),hiderunList:=Object(),closerunList:=Object(),repeatrunList:=Object(),mostrunList:=Object(),lasttimeList:=Object(),rulerunList:=Object(),rulelogicList:=Object(),rulenumberList:=Object(),ruletimeList:=Object()
+	runitemVar:=autorunVar:=hiderunVar:=closerunVar:=repeatrunVar:=mostrunVar:=lasttimeVar:=rulerunVar:=rulelogicVar:=rulenumberVar:=ruletimeVar:=""
 	IniRead,runitemVar,%iniFile%,run_item
 	Loop, parse, runitemVar, `n, `r
 	{
@@ -1106,6 +1140,12 @@ Run_Item_Read:
 	{
 		itemList:=StrSplit(A_LoopField,"=")
 		mostrunList[itemList[1]]:=itemList[2]
+	}
+	IniRead,lasttimeVar,%iniFile%,last_run_time
+	Loop, parse, lasttimeVar, `n, `r
+	{
+		itemList:=StrSplit(A_LoopField,"=")
+		lasttimeList[itemList[1]]:=itemList[2]
 	}
 	IniRead,rulerunVar,%iniFile%,rule_run_item
 	Loop, parse, rulerunVar, `n, `r
