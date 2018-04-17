@@ -1,8 +1,10 @@
 ﻿/*
 【RunAnyCtrl检查更新Github上的最新版本】
 */
-global RunAnyCtrl_update_version:="1.3.5"
+global RunAnyCtrl_update_version:="1.4.17"
 SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
+global RunAnyCtrl:="RunAnyCtrl"
+global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 updateMsg:=Object()
 updateNeed:=Object()
 notnewest:=true
@@ -39,6 +41,60 @@ For di, dname in PluginsList
 	IfNotExist, %A_ScriptDir%%dnamePath%
 	{
 		updateNeed[dname]:=true
+	}
+}
+;[下载github上的规则配置文件]
+IfExist,%iniFile%
+{
+	URLDownloadToFile,%RunAnyGithubDir%/Lib/RunAnyCtrlRule.ini ,%A_ScriptDir%\Lib\RunAnyCtrlRule.ini
+	ruleitemList:=Object(),rulefuncList:=Object()
+	IniRead,ruleitemVar,%iniFile%,rule_item
+	Loop, parse, ruleitemVar, `n, `r
+	{
+		itemList:=StrSplit(A_LoopField,"=")
+		IniRead, OutputVar, %iniFile%, rule_item,% itemList[1]
+		ruleitemList[itemList[1]]:=OutputVar
+	}
+	IniRead,rulefuncVar,%iniFile%,func_item
+	Loop, parse, rulefuncVar, `n, `r
+	{
+		itemList:=StrSplit(A_LoopField,"=")
+		IniRead, OutputVar, %iniFile%, func_item,% itemList[1]
+		rulefuncList[itemList[1]]:=OutputVar
+	}
+	;写入新的规则名和规则路径
+	IniRead,ruleitemVarNew,%A_ScriptDir%\Lib\RunAnyCtrlRule.ini,rule_item
+	Loop, parse, ruleitemVarNew, `n, `r
+	{
+		itemList:=StrSplit(A_LoopField,"=")
+		IniRead, newRuleVar, %A_ScriptDir%\Lib\RunAnyCtrlRule.ini, rule_item,% itemList[1]
+		sameFlag:=false
+		For ki, kv in ruleitemList
+		{
+			if(itemList[1]=ki && newRuleVar=kv){
+				sameFlag=true
+			}
+		}
+		if(!sameFlag){
+			IniWrite, %newRuleVar%, %iniFile%, rule_item, % itemList[1]
+		}
+	}
+	;写入新的规则名和规则函数
+	IniRead,rulefuncVarNew,%A_ScriptDir%\Lib\RunAnyCtrlRule.ini,func_item
+	Loop, parse, rulefuncVarNew, `n, `r
+	{
+		itemList:=StrSplit(A_LoopField,"=")
+		IniRead, newFuncVar, %A_ScriptDir%\Lib\RunAnyCtrlRule.ini, func_item,% itemList[1]
+		sameFlag:=false
+		For ki, kv in rulefuncList
+		{
+			if(itemList[1]=ki && newFuncVar=kv){
+				sameFlag=true
+			}
+		}
+		if(!sameFlag){
+			IniWrite, %newFuncVar%, %iniFile%, func_item, % itemList[1]
+		}
 	}
 }
 ;[比较github上的版本号和本地的版本号]
