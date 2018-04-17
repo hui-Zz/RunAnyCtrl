@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl公共规则函数库】
 */
-global rule_common_version:="1.3.5"
+global rule_common_version:="1.4.17"
 rule_true(){
 	return true
 }
@@ -58,4 +58,30 @@ name 电脑名
 */
 rule_computer_name(name){
 	return A_ComputerName=name ? true : false
+}
+/*
+【验证当前登录用户名称】
+name 用户名
+*/
+rule_user_name(name){
+	return A_UserName=name ? true : false
+}
+/*
+【验证当前登录用户有管理员权限】
+*/
+rule_user_is_admin(){
+	return A_IsAdmin=1 ? true : false
+}
+/*
+【验证当前windows系统版本】
+version 如：WIN_7, WIN_8, WIN_VISTA, WIN_2003, WIN_XP, WIN_2000, Windows10版本为具体的版本号数字
+*/
+rule_system_version(version){
+	return A_OSVersion=version ? true : false
+}
+/*
+【验证当前当操作系统为64位】
+*/
+rule_system_is_64bit(){
+	return A_Is64bitOS=1 ? true : false
 }
