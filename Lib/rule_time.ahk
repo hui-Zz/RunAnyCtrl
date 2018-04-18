@@ -45,6 +45,7 @@ rule_today_hour(hour, operator=""){
 }
 /*
 通过第三方接口验证节假日 @hui-Zz
+today 验证的日期
 */
 rule_holiday(today=""){
 	;~ 测试网络连接
