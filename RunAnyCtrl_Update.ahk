@@ -10,8 +10,30 @@ updateNeed:=Object()
 notnewest:=true
 RunAnyGithubDir:="https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master"
 DownList:=["RunAnyCtrl","RunAnyCtrlFunc","JSON","rule_common","rule_time"]
-URLDownloadToFile,%RunAnyGithubDir%/RunAnyCtrl.ahk ,%A_Temp%\temp_RunAnyCtrl.ahk
+;[下载最新的更新脚本]
+URLDownloadToFile,%RunAnyGithubDir%/RunAnyCtrl_Update.ahk ,%A_Temp%\temp_RunAnyCtrl_Update.ahk
+versionReg=iS)^\t*\s*global RunAnyCtrl_update_version:="([\d\.]*)"
+Loop, read, %A_Temp%\temp_RunAnyCtrl_Update.ahk
+{
+	if(RegExMatch(A_LoopReadLine,versionReg)){
+		versionStr:=RegExReplace(A_LoopReadLine,versionReg,"$1")
+		break
+	}
+	if(A_LoopReadLine="404: Not Found"){
+		MsgBox,"网络异常，下载失败"
+		return
+	}
+}
+if(versionStr){
+	if(RunAnyCtrl_update_version<versionStr){
+		FileCopy, %A_Temp%\temp_RunAnyCtrl_Update.ahk, %A_ScriptDir%\RunAnyCtrl_Update.ahk, 1
+		FileDelete, %A_Temp%\temp_RunAnyCtrl_Update.ahk
+		Run,%A_ScriptDir%\RunAnyCtrl_Update.ahk
+		ExitApp
+	}
+}
 ;[从RunAnyCtrl中取出需要更新的插件列表]
+URLDownloadToFile,%RunAnyGithubDir%/RunAnyCtrl.ahk ,%A_Temp%\temp_RunAnyCtrl.ahk
 PluginsReg=iS)^\t*\s*global PluginsList:="(.*)"
 Loop, read, %A_Temp%\temp_RunAnyCtrl.ahk
 {
