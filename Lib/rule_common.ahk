@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl公共规则函数库】
 */
-global rule_common_version:="1.4.17"
+global rule_common_version:="1.4.18"
 rule_true(){
 	return true
 }
@@ -84,4 +84,62 @@ rule_system_version(version){
 */
 rule_system_is_64bit(){
 	return A_Is64bitOS=1 ? true : false
+}
+/*
+验证当前内网ip地址 @hui-Zz
+ip 验证的ip（模糊匹配）
+*/
+rule_ip_internal(ip=""){
+	if(!ip)
+		return false
+	cmdResult:=IsFunc("cmdSilenceReturn") ? Func("cmdSilenceReturn").Call("for /f ""tokens=4"" %%a in ('route print^|findstr 0.0.0.0.*0.0.0.0') do echo %%a") : ""
+	return InStr(cmdResult,ip) ? true : false
+}
+/*
+验证当前外网ip地址 @hui-Zz
+ip 验证的ip（模糊匹配）
+*/
+rule_ip_external(ip=""){
+	if(!ip)
+		return false
+	jsonData:=IsFunc("get_ip_api") ? Func("get_ip_api").Call() : ""
+	if(!jsonData)
+		return false
+	return InStr(jsonData.query,ip) ? true : false
+}
+/*
+验证当前ip地址定位的省市地址 @hui-Zz
+city 验证的城市名
+regionName 验证的省名
+*/
+rule_ip_address(city="",regionName=""){
+	rule_result:=false
+	jsonData:=IsFunc("get_ip_api") ? Func("get_ip_api").Call() : ""
+	if(!jsonData)
+		return false
+	if(city && regionName){
+		if(jsonData.city=city && jsonData.regionName=regionName){
+			return true
+		}
+	}else{
+		if(city){
+			rule_result:=jsonData.city=city ? true : false
+		}
+		if(regionName){
+			rule_result:=jsonData.regionName=regionName ? true : false
+		}
+	}
+	return rule_result
+}
+/*
+验证当前网络运营商 @hui-Zz
+isp 验证的运营商名，如中国电信：China Telecom
+*/
+rule_ip_isp(isp=""){
+	if(!isp)
+		return false
+	jsonData:=IsFunc("get_ip_api") ? Func("get_ip_api").Call() : ""
+	if(!jsonData)
+		return false
+	return InStr(jsonData.isp,isp) ? true : false
 }

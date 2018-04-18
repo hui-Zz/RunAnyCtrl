@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl检查更新Github上的最新版本】
 */
-global RunAnyCtrl_update_version:="1.4.17"
+global RunAnyCtrl_update_version:="1.4.18"
 SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 global RunAnyCtrl:="RunAnyCtrl"
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
@@ -9,7 +9,7 @@ updateMsg:=Object()
 updateNeed:=Object()
 notnewest:=true
 RunAnyGithubDir:="https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master"
-DownList:=["RunAnyCtrl","RunAnyCtrlFunc","rule_common","rule_time"]
+DownList:=["RunAnyCtrl","RunAnyCtrlFunc","JSON","rule_common","rule_time"]
 URLDownloadToFile,%RunAnyGithubDir%/RunAnyCtrl.ahk ,%A_Temp%\temp_RunAnyCtrl.ahk
 ;[从RunAnyCtrl中取出需要更新的插件列表]
 PluginsReg=iS)^\t*\s*global PluginsList:="(.*)"

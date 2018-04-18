@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl特殊函数调用库】
 */
-global RunAnyCtrlFunc_version:="1.4.8"
+global RunAnyCtrlFunc_version:="1.4.18"
 /*
 【自动识别AHK脚本中的函数 by hui-Zz】（RunAnyCtrl使用中，勿删慎改）
 ahkPath AHK脚本路径
@@ -64,4 +64,31 @@ cmdSilenceReturn(command){
 		FileDelete,%A_Temp%\RunAnyCtrlCMD.txt
 	}catch{}
 	return CMDReturn
+}
+/*
+通过第三方接口获取IP地址等信息 @hui-Zz
+query、country、countryCode、regionName、region、city、lat、lon、timezone、isp
+外网ip、国家、国家代码、地区、地区代码、城市、纬度、经度、时区、运营商
+*/
+get_ip_api(){
+	if(!IsObject(JSON))
+		return false
+	;~ 测试网络连接
+	lpszUrl:="http://www.ip-api.com"
+	network:=DllCall("Wininet.dll\InternetCheckConnection", "Ptr", &lpszUrl, "UInt", 0x1, "UInt", 0x0, "Int")
+	if(!network)
+		return false
+	apiUrl=http://ip-api.com/json
+	sendStr:=apiUrl
+	whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+	whr.Open("GET", sendStr)
+	try {
+		whr.Send()
+	} catch {
+		TrayTip,,验证IP地址异常，可能是网络已断开或接口失效,3,1
+	}
+	responseStr:= whr.ResponseText
+	if(responseStr)
+		jsonData:=JSON.Load(responseStr)
+	return jsonData
 }
