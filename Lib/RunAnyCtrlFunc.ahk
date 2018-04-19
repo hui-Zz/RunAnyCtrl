@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl特殊函数调用库】
 */
-global RunAnyCtrlFunc_version:="1.4.9"
+global RunAnyCtrlFunc_version:="1.4.9.1"
 /*
 【自动识别AHK脚本中的函数 by hui-Zz】（RunAnyCtrl使用中，勿删慎改）
 ahkPath AHK脚本路径
@@ -48,22 +48,43 @@ cmdReturn(command){
 */
 cmdSilenceReturn(command){
 	CMDReturn:=""
+	cmdFN:="RunAnyCtrlCMD"
+	if(FileExist(A_Temp "\" cmdFN ".bat"))
+		FileDelete,%A_Temp%\%cmdFN%.bat
+	if(FileExist(A_Temp "\" cmdFN ".txt"))
+		FileDelete,%A_Temp%\%cmdFN%.txt
 	try{
-		wifiBat:=command . " >> %Temp%\RunAnyCtrlCMD.txt"
-		FileAppend,%wifiBat%,%A_Temp%\RunAnyCtrlCMD.bat
+		batResult:=command . " >> %Temp%\" cmdFN ".txt"
+		FileAppend,%batResult%,%A_Temp%\%cmdFN%.bat
 		shell := ComObjCreate("WScript.Shell")
-		shell.run("%Temp%\RunAnyCtrlCMD.bat",0)
+		shell.run("%Temp%\" cmdFN ".bat",0)
 		Loop,100
 		{
-			FileRead, CMDReturn, %A_Temp%\RunAnyCtrlCMD.txt
+			if(FileExist(A_Temp "\" cmdFN ".txt"))
+				FileRead, CMDReturn, %A_Temp%\%cmdFN%.txt
 			if(CMDReturn)
 				break
 			Sleep,20
 		}
-		FileDelete,%A_Temp%\RunAnyCtrlCMD.bat
-		FileDelete,%A_Temp%\RunAnyCtrlCMD.txt
+		FileDelete,%A_Temp%\%cmdFN%.bat
+		FileDelete,%A_Temp%\%cmdFN%.txt
 	}catch{}
 	return CMDReturn
+}
+/*
+【隐藏运行cmd命令并将结果存入剪贴板后取回 @hui-Zz】
+*/
+cmdClipReturn(command){
+	cmdInfo:=""
+	Clip_Saved:=ClipboardAll
+	try{
+		Clipboard:=""
+		Run,% ComSpec " /C " command " | CLIP", , Hide
+		ClipWait,2
+		cmdInfo:=Clipboard
+	}catch{}
+	Clipboard:=Clip_Saved
+	return cmdInfo
 }
 /*
 通过第三方接口获取IP地址等信息 @hui-Zz
