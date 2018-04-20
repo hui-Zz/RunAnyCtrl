@@ -11,6 +11,14 @@
 
 ---
 
+## RunAnyCtrl使用场景
+
+- 无网络情况 = 不自动运行任何需要网络的应用
+- 上班时间+不是节假日+公司电脑 = 自动运行TIM、工作软件等
+- 下班时间or是节假日+电脑名是笔记本+家中Wifi = 自动运行音乐、打开视频网站、游戏等
+
+---
+
 ## RunAnyCtrl使用说明
 
 ![RunAnyCtrl使用说明](https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master/RunAnyCtrl使用说明.png)
