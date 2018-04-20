@@ -44,8 +44,8 @@
 | 验证当前当操作系统为64位                                  |                                                              |                          |                                              |
 | 验证当前内网ip地址                                        | ip（模糊匹配）                                               |                          |                                              |
 | 验证当前外网ip地址                                        | ip（模糊匹配）                                               |                          |                                              |
-| 验证当前ip地址定位的省市地址                              | 城市名、省名                                                 |                          |                                              |
-| 验证当前网络运营商                                        | 运营商名，如中国电信：China Telecom<br />具体                          |                          |                                            查看http://www.ip-api.com  |
+| 验证当前ip地址定位的省市地址                              | 城市名、省名，可查看http://www.ip-api.com                    |                          |                                              |
+| 验证当前网络运营商                                        | 运营商名，<br />如中国电信：China Telecom；移动 China Mobile<br />具体查看http://www.ip-api.com |                          |                                              |
 
 ---
 
