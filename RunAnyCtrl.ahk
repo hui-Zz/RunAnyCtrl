@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.4.18
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.4.26
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="1.4.18"
+global RunAnyCtrl_version:="1.4.26"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -78,7 +78,7 @@ Gui,Destroy
 Gui,Default
 Gui,+Resize
 Gui,Font, s10, Microsoft YaHei
-Gui,Add, Listview, xm w800 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|类型|自启|隐藏|自关|不重复|最多|规则|匹配|循环|间隔|状态|最后运行时间|路径
+Gui,Add, Listview, xm w900 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|类型|自启|隐藏|自关|不重复|最多|规则|匹配|循环|间隔|状态|最后运行时间|路径
 ;~;[读取启动项内容写入列表]
 GuiControl, -Redraw, RunAnyLV
 For runn, runv in runitemList
@@ -256,7 +256,8 @@ Gui,2:Add, GroupBox,xm y+10 w500 h175,启动项设置
 Gui,2:Add, Text, xm+10 y35 w60, 启动项名：
 Gui,2:Add, Edit, x+5 yp-3 w400 vvFileName, %FileName%
 Gui,2:Add, Button, xm+5 yp+35 w60 GSetFilePath,启动路径
-Gui,2:Add, Edit, x+10 yp w400 r3 vvFilePath, %FilePath%
+Gui,2:Add, Button, xm+5 y+2 w60 GSetFileRelativePath,相对路径
+Gui,2:Add, Edit, x+10 yp-30 w400 r3 vvFilePath, %FilePath%
 Gui,2:Add, CheckBox, xm+10 y+5 Checked%FileAutoRun% vvFileAutoRun, 自动启动
 Gui,2:Add, CheckBox, x+15 yp Checked%FileHideRun% vvFileHideRun, 隐藏启动
 Gui,2:Add, CheckBox, x+10 yp Checked%FileCloseRun% vvFileCloseRun, 随RunAnyCtrl自动关闭
@@ -297,31 +298,42 @@ return
 LVSave:
 	Gui,2:Submit, NoHide
 	if(!vFileName || !vFilePath){
-		MsgBox, 48, ,请填入启动项名和启动路径
+		ToolTip, 请填入启动项名和启动路径,195,35
+		SetTimer,RemoveToolTip,3000
 		return
 	}
 	if(FileName!=vFileName && runitemList[vFileName]){
-		MsgBox, 48, ,已存在相同的启动项名，请修改
+		ToolTip, 已存在相同的启动项名，请修改,195,35
+		SetTimer,RemoveToolTip,3000
 		return
-	}
-	For ki, kv in KeyList
-	{
-		if(vFileName=kv){
-			MsgBox, 48, ,启动项名不能与RunAnyCtrl内置配置重名，请修改
-			return
-		}
 	}
 	if(Instr(vFileName, A_SPACE)){
 		StringReplace, vFileName, vFileName, %A_SPACE%, _, All
 		GuiControl, 2:, vFileName, %vFileName%
-		MsgBox, 48, ,启动项名不能带有空格，请用_代替
+		ToolTip, 启动项名不能带有空格，请用_代替,195,35
+		SetTimer,RemoveToolTip,3000
 		return
 	}
 	if(Instr(vFileName, A_Tab)){
 		StringReplace, vFileName, vFileName, %A_Tab%, _, All
 		GuiControl, 2:, vFileName, %vFileName%
-		MsgBox, 48, ,启动项名不能带有制表符，请用_代替
+		ToolTip, 启动项名不能带有制表符，请用_代替,195,35
+		SetTimer,RemoveToolTip,3000
 		return
+	}
+	;中文、数字、字母、下划线正则校验，根据Unicode字符属性Han来判断中文，RunAnyCtrl.ahk编码不能为ANSI
+	if(!RegExMatch(vFileName,"^[\p{Han}A-Za-z0-9_]+$")){
+		ToolTip, 启动项名只能为中文、数字、字母、下划线,195,35
+		SetTimer,RemoveToolTip,5000
+		return
+	}
+	For ki, kv in KeyList
+	{
+		if(vFileName=kv){
+			ToolTip, 启动项名不能与RunAnyCtrl内置配置重名，请修改,195,35
+			SetTimer,RemoveToolTip,5000
+			return
+		}
 	}
 	;~ 先删除启动项原有规则项
 	IniDelete, %iniFile%, %FileName%
@@ -574,6 +586,49 @@ return
 SetFilePath:
 	FileSelectFile, filePath, 3, , 请选择导入的启动项, (*.ahk;*.exe)
 	GuiControl, 2:, vFilePath, %filePath%
+return
+;[全路径转换为RunAnyCtrl的相对路径]
+SetFileRelativePath:
+	Gui,2:Submit, NoHide
+	SplitPath, vFilePath, fname, fdir, fext, , fdrive
+	SplitPath, A_ScriptFullPath, name, dir, ext, , drive
+	if(!vFilePath || !fdir || !fdrive)
+		return
+	if(fdrive!=drive){
+		ToolTip, 与RunAnyCtrl不在同一磁盘，不能转换为相对路径,155,130
+		SetTimer,RemoveToolTip,5000
+		return
+	}
+	;下级目录直接去掉RunAnyCtrl路径
+	if(InStr(vFilePath,dir)){
+		filePath:=StrReplace(vFilePath,dir)
+		StringTrimLeft, filePath, filePath, 1
+		GuiControl, 2:, vFilePath, %filePath%
+		return
+	}
+	;上级目录根据层级递进添加多级前缀..\
+	pathList:=StrSplit(dir,"\")
+	Loop,% pathList.MaxIndex()
+	{
+		pathStr:=""
+		upperStr:=""
+		;每次向上递进，找到与启动项相匹配路径段替换成..\
+		Loop,% pathList.MaxIndex()-A_Index
+		{
+			pathStr.=pathList[A_Index] . "\"
+		}
+		StringTrimRight, pathStr, pathStr, 1
+		if(InStr(fdir,pathStr)){
+			Loop,% A_Index
+			{
+				upperStr.="..\"
+			}
+			StringTrimRight, upperStr, upperStr, 1
+			filePath:=StrReplace(vFilePath,pathStr,upperStr)
+			GuiControl, 2:, vFilePath, %filePath%
+			return
+		}
+	}
 return
 LVSet:
 	Gui,S:Destroy
@@ -1008,7 +1063,7 @@ AutoRun_Effect:
 				if(hiderunList[runn])
 					Run,%runv%,, hide
 				else
-					Run,%runv%,, UseErrorLevel
+					Run,%runv%
 				WriteLastRunTimeFunc%runn%:=Func("Write_Last_Run_Time").Bind(runn,A_Now)	;写运行时间定时器
 				SetTimer,% WriteLastRunTimeFunc%runn%, %WriteLastRunTime%
 			}
@@ -1074,6 +1129,7 @@ Var_Set:
 		IniWrite, %initFunc%, %iniFile%, func_item
 		IniWrite, 1, %iniFile%, rule_run_item, RunAnyCtrl
 		IniWrite, 网络连接|1|, %iniFile%, RunAnyCtrl
+		Gosub,Github_Update
 		TrayTip,,RunAnyCtrl初始化成功！点击任务栏图标设置，可自由定制规则启动程序（如有网络打开网页）,3,1
 	}
 	if(FileExist(pluginsFile))
@@ -1291,6 +1347,10 @@ return
 Menu_Exit:
 	ExitApp
 return
+RemoveToolTip:
+	SetTimer,RemoveToolTip,Off
+	ToolTip
+	return
 ExitSub:
 	gosub,AutoClose_Effect
 	ExitApp

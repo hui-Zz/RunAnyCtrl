@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl检查更新Github上的最新版本】
 */
-global RunAnyCtrl_update_version:="1.4.18"
+global RunAnyCtrl_update_version:="1.4.26"
 SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 global RunAnyCtrl:="RunAnyCtrl"
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
@@ -152,27 +152,28 @@ For dname, msg in updateMsg
 }
 if(notnewest){
 	msgResult.="RunAnyCtrl已经是最新版本。"
+	TrayTip,,%msgResult%,3,1
 }else{
 	msgResult.="RunAnyCtrl是否更新到最新版本？`n覆盖老版本文件，如有过修改请注意备份`n更新后重启RunAnyCtrl生效"
-}
-MsgBox, 33, RunAnyCtrl更新, %msgResult%
-IfMsgBox Ok
-{
-	IfNotExist,%A_ScriptDir%\Lib
+	MsgBox, 33, RunAnyCtrl更新, %msgResult%
+	IfMsgBox Ok
 	{
-		FileCreateDir, %A_ScriptDir%\Lib
-	}
-	For dname, update in updateNeed
-	{
-		if(update){
-			dnameahk:=dname . ".ahk"
-			dnamePath:=(dname="RunAnyCtrl") ? "/" dnameahk: "/Lib/" dnameahk
-			FileCopy, %A_Temp%\temp_%dnameahk%, %A_ScriptDir%%dnamePath%, 1
+		IfNotExist,%A_ScriptDir%\Lib
+		{
+			FileCreateDir, %A_ScriptDir%\Lib
 		}
-		FileDelete, %A_Temp%\temp_%dnameahk%
-	}
-	IfNotExist,%A_ScriptDir%\Lib\RunAnyCtrl.ico
-	{
-		URLDownloadToFile,%RunAnyGithubDir%/Lib/RunAnyCtrl.ico ,%A_ScriptDir%\Lib\RunAnyCtrl.ico
+		For dname, update in updateNeed
+		{
+			if(update){
+				dnameahk:=dname . ".ahk"
+				dnamePath:=(dname="RunAnyCtrl") ? "/" dnameahk: "/Lib/" dnameahk
+				FileCopy, %A_Temp%\temp_%dnameahk%, %A_ScriptDir%%dnamePath%, 1
+			}
+			FileDelete, %A_Temp%\temp_%dnameahk%
+		}
+		IfNotExist,%A_ScriptDir%\Lib\RunAnyCtrl.ico
+		{
+			URLDownloadToFile,%RunAnyGithubDir%/Lib/RunAnyCtrl.ico ,%A_ScriptDir%\Lib\RunAnyCtrl.ico
+		}
 	}
 }
