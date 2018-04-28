@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v1.4.26
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.4.27
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="1.4.26"
+global RunAnyCtrl_version:="2.4.27"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -27,10 +27,12 @@ global PluginsList:="RunAnyCtrlFunc,JSON,rule_common,rule_time"
 #Include *i %A_ScriptDir%\Lib\RunAnyCtrlFunc.ahk
 Gosub,Var_Set		;~参数初始化
 if(!ahkExePath || !FileExist(ahkExePath)){
-	RegRead, regFileExt, HKEY_CLASSES_ROOT, .ahk
-	RegRead, regFileIcon, HKEY_CLASSES_ROOT, %regFileExt%\DefaultIcon
-	regFileIconS:=StrSplit(regFileIcon,",")
-	if(regFileIconS[1]){
+	try{
+		RegRead, regFileExt, HKEY_CLASSES_ROOT, .ahk
+		RegRead, regFileIcon, HKEY_CLASSES_ROOT, %regFileExt%\DefaultIcon
+		regFileIconS:=StrSplit(regFileIcon,",")
+	}catch{}
+	if(regFileIconS && regFileIconS[1]){
 		Reg_Set("ahkExePath",regFileIconS[1])
 		ahkExePath:=regFileIconS[1]
 	}else{
@@ -81,13 +83,13 @@ Gui,Font, s10, Microsoft YaHei
 Gui,Add, Listview, xm w900 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|类型|自启|隐藏|自关|不重复|最多|规则|匹配|循环|间隔|状态|最后运行时间|路径
 ;~;[读取启动项内容写入列表]
 GuiControl, -Redraw, RunAnyLV
-For runn, runv in runitemList
+For runn, runv in run_item_List
 {
 	runStatus:=Check_IsRun(runv) ? "启动" : "x"
 	runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 	SplitPath, runValue,,, FileExt  ; 获取文件扩展名.
 	runType:=FileExt ? FileExt : RegExMatch(runv,"iS)([\w-]+://?|www[.]).*") ? "网址" : "未知"
-	LV_Add("", runn, runType, autorunList[runn] ? "是" : "x", hiderunList[runn] ? "是" : "x", closerunList[runn] ? "是" : "x", repeatrunList[runn] ? "是" : "x", mostrunList[runn], rulerunList[runn] ? "是" : "x", rulerunList[runn] ? rulelogicList[runn] ? "与" : "或" : "x", rulenumberList[runn], ruletimeList[runn], runStatus, lasttimeList[runn], runv)
+	LV_Add("", runn, runType, auto_run_item_List[runn] ? "是" : "x", hide_run_item_List[runn] ? "是" : "x", close_run_item_List[runn] ? "是" : "x", repeat_run_item_List[runn] ? "是" : "x", most_run_item_List[runn], rule_run_item_List[runn] ? "是" : "x", rule_run_item_List[runn] ? rule_logic_item_List[runn] ? "与" : "或" : "x", rule_number_item_List[runn], rule_time_item_List[runn], runStatus, last_run_time_List[runn], runv)
 }
 GuiControl, +Redraw, RunAnyLV
 LVMenu("LVMenu")
@@ -174,7 +176,7 @@ LVApply:
 			if(FileHideRun="是")
 				Run,%FilePath%,, hide
 			else
-				Run,%FilePath%,, UseErrorLevel
+				Run,%FilePath%
 			LV_Modify(RowNumber, "", , , , , , , , , , , , "启动", A_Now)
 			IniWrite, %A_Now%, %iniFile%, last_run_time, %FileName%
 		}else if(menuItem="编辑"){
@@ -240,7 +242,8 @@ if(menuItem="配置"){
 	LV_GetText(FileRuleNumber, RunRowNumber, ColumnRuleNumber)
 	LV_GetText(FileRuleTime, RunRowNumber, ColumnRuleTime)
 	LV_GetText(FilePath, RunRowNumber, ColumnPath)
-	FileRuleLogic1:=rulelogicList[FileName]
+	FileRuleLogic1:=rule_logic_item_List[FileName]
+	FileDelayRun:=delay_run_item_List[FileName]
 }
 FileRuleLogic2:=FileRuleLogic1 ? 0 : 1
 FileAutoRun:=FileAutoRun="是" ? 1 : 0
@@ -263,6 +266,8 @@ Gui,2:Add, CheckBox, x+15 yp Checked%FileHideRun% vvFileHideRun, 隐藏启动
 Gui,2:Add, CheckBox, x+10 yp Checked%FileCloseRun% vvFileCloseRun, 随RunAnyCtrl自动关闭
 Gui,2:Add, Text, xm+10 y+10 w85, 最多启动次数：
 Gui,2:Add, Edit, x+2 yp-3 Number w63 h20 vvFileMostRun, %FileMostRun%
+Gui,2:Add, Text, x+10 yp+3 w95, 延迟时间(毫秒)：
+Gui,2:Add, Edit, x+2 yp-3 Number w63 h20 vvFileDelayRun, %FileDelayRun%
 Gui,2:Add, CheckBox, x+20 yp+3 Checked%FileRepeatRun% vvFileRepeatRun, 不重复启动
 if(!IsFunc("rule_IsRun")){
 	Gui,2:Add, Text, x+2 yp CRed w50, (不可用)
@@ -302,7 +307,7 @@ LVSave:
 		SetTimer,RemoveToolTip,3000
 		return
 	}
-	if(FileName!=vFileName && runitemList[vFileName]){
+	if(FileName!=vFileName && run_item_List[vFileName]){
 		ToolTip, 已存在相同的启动项名，请修改,195,35
 		SetTimer,RemoveToolTip,3000
 		return
@@ -382,6 +387,8 @@ LVSave:
 		IniWrite, %vFileRepeatRun%, %iniFile%, repeat_run_item, %vFileName%
 	if(vFileMostRun)
 		IniWrite, %vFileMostRun%, %iniFile%, most_run_item, %vFileName%
+	if(vFileDelayRun)
+		IniWrite, %vFileDelayRun%, %iniFile%, delay_run_item, %vFileName%
 	if(vFileRuleRun)
 		IniWrite, %vFileRuleRun%, %iniFile%, rule_run_item, %vFileName%
 	if(vFileRuleRun && vFileRuleLogic)
@@ -401,7 +408,7 @@ LVImport:
 		}else{
 			fullPath:=dir "\" A_LoopField
 			SplitPath, fullPath, , , ext, name_no_ext
-			if(runitemList[name_no_ext]){
+			if(run_item_List[name_no_ext]){
 				TrayTip,,导入项中有已存在的相同文件名启动项，不会导入,3,1
 				continue
 			}
@@ -886,7 +893,8 @@ LVModifyCol(width, colList*){
 }
 ;[变更所有正在使用此规则的启动项中关联规则名称]
 Change_Rule_Name(rname,rnew){
-	For runn, runv in runitemList
+	global run_item_List
+	For runn, runv in run_item_List
 	{
 		writeFalg:=false
 		ruleContent:=""
@@ -957,19 +965,19 @@ Reg_Set(sz,var){
 Rule_Effect:
 	global runIndex:=Object(),funcEffect:=Object()
 	try{
-		For runn, runv in runitemList	;循环启动项
+		For runn, runv in run_item_List	;循环启动项
 		{
-			if(rulerunList[runn]){		;需要执行规则
+			if(rule_run_item_List[runn]){		;需要执行规则
 				;已在运行且设定为不重复启动
-				if(repeatrunList[runn] && Check_IsRun(runv))
+				if(repeat_run_item_List[runn] && Check_IsRun(runv))
 					continue
 				;是否设定运行项最多启动次数
-				if(mostrunList[runn] && !mostrunIndex[runn])
+				if(most_run_item_List[runn] && !mostrunIndex[runn])
 					mostrunIndex[runn]:=0
-				if((rulenumberList[runn] && rulenumberList[runn] > 1) || (rulenumberList[runn] > 0 && ruletimeList[runn])){
+				if((rule_number_item_List[runn] && rule_number_item_List[runn] > 1) || (rule_number_item_List[runn] > 0 && rule_time_item_List[runn])){
 					runIndex[runn]:=0	;规则定时器初始计数为0
 					funcEffect%runn%:=Func("Func_Effect").Bind(runn, runv)	;规则定时器
-					ruleTime:=ruletimeList[runn] ? ruletimeList[runn] : 1		;规则定时器间隔时间(毫秒)
+					ruleTime:=rule_time_item_List[runn] ? rule_time_item_List[runn] : 1		;规则定时器间隔时间(毫秒)
 					SetTimer,% funcEffect%runn%, %ruleTime%
 				}else{
 					Func_Effect(runn, runv)
@@ -985,6 +993,7 @@ return
 最多支持传递10个参数
 */
 Func_Effect(runn, runv){
+	global
 	effectFlag:=false
 	For k, v in runruleitemList[runn]	;循环规则内容
 	{
@@ -1022,7 +1031,7 @@ Func_Effect(runn, runv){
 		}
 		;该启动项所有规则必须全部为真时，如有一假就退出循环
 		;该启动项只需要有一项规则为真时，如有一真就退出循环
-		if(rulelogicList[runn]){
+		if(rule_logic_item_List[runn]){
 			if(!effectFlag)
 				break
 		}else{
@@ -1032,38 +1041,37 @@ Func_Effect(runn, runv){
 	}
 	if(effectFlag){
 		;启动项是否超出最多运行次数
-		if(!mostrunList[runn] || mostrunIndex[runn] < mostrunList[runn]){
-			if(hiderunList[runn])
-				Run,%runv%,, hide
-			else
-				Run,%runv%,, UseErrorLevel
+		if(!most_run_item_List[runn] || mostrunIndex[runn] < most_run_item_List[runn]){
+			Run_Run_Run(runn,runv)
 			WriteLastRunTimeFunc%runn%:=Func("Write_Last_Run_Time").Bind(runn,A_Now)	;写运行时间定时器
 			SetTimer,% WriteLastRunTimeFunc%runn%, %WriteLastRunTime%
-			if(mostrunList[runn])
+			if(most_run_item_List[runn])
 				mostrunIndex[runn]++
 		}
 	}
 	runIndex[runn]++	;规则定时器运行计数+1
 	;规则运行计数达到最大循环次数 || 已在运行且设定为不重复启动 || 启动项已达到最多运行次数 => 结束定时器
-	if((runIndex[runn] && runIndex[runn] >= rulenumberList[runn]) || (repeatrunList[runn] && Check_IsRun(runv)) || (mostrunList[runn] && mostrunIndex[runn] >= mostrunList[runn])){
+	if((runIndex[runn] && runIndex[runn] >= rule_number_item_List[runn]) || (repeat_run_item_List[runn] && Check_IsRun(runv)) || (most_run_item_List[runn] && mostrunIndex[runn] >= most_run_item_List[runn])){
 		try SetTimer,% funcEffect%runn%, Off
 	}
 }
 ;~;[自动启动生效]
 AutoRun_Effect:
 	try {
-		For runn, runv in runitemList	;循环启动项
+		For runn, runv in run_item_List	;循环启动项
 		{
 			;需要自动启动的项
-			if(autorunList[runn]){
+			if(auto_run_item_List[runn]){
 				;已在运行且设定为不重复启动
-				if(repeatrunList[runn] && Check_IsRun(runv))
+				if(repeat_run_item_List[runn] && Check_IsRun(runv))
 					continue
-				;设定为隐藏启动
-				if(hiderunList[runn])
-					Run,%runv%,, hide
-				else
-					Run,%runv%
+				;设定为延迟启动
+				if(delay_run_item_List[runn]){
+					delayRunEffect%runn%:=Func("Delay_Run_Effect").Bind(runn,runv)
+					SetTimer,% delayRunEffect%runn%, % delay_run_item_List[runn]
+					continue
+				}
+				Run_Run_Run(runn,runv)
 				WriteLastRunTimeFunc%runn%:=Func("Write_Last_Run_Time").Bind(runn,A_Now)	;写运行时间定时器
 				SetTimer,% WriteLastRunTimeFunc%runn%, %WriteLastRunTime%
 			}
@@ -1074,9 +1082,9 @@ AutoRun_Effect:
 return
 ;~;[随RunAnyCtrl自动关闭]
 AutoClose_Effect:
-	For runn, runv in runitemList
+	For runn, runv in run_item_List
 	{
-		if(closerunList[runn]){
+		if(close_run_item_List[runn]){
 			runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 			SplitPath, runValue, name,, ext  ; 获取扩展名
 			if(ext="ahk"){
@@ -1087,6 +1095,22 @@ AutoClose_Effect:
 		}
 	}
 return
+Run_Run_Run(runn,runv){
+	global
+	try {
+		;设定为隐藏启动
+		if(hide_run_item_List[runn])
+			Run,%runv%,, hide
+		else
+			Run,%runv%
+	} catch e {
+		MsgBox,16,启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
+	}
+}
+Delay_Run_Effect(runn,runv){
+	Run_Run_Run(runn,runv)
+	SetTimer,% delayRunEffect%runn%, Off
+}
 Write_Last_Run_Time(runn,runTime){
 	IniWrite, %runTime%, %iniFile%, last_run_time, %runn%
 	try SetTimer,% WriteLastRunTimeFunc%runn%, Off
@@ -1098,7 +1122,12 @@ Var_Set:
 	;~;[RunAnyCtrl设置参数]
 	RegRead, AutoRun, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 	AutoRun:=AutoRun ? 1 : 0
-	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","last_run_time","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
+	;配置列表：RunAnyCtrl配置；启动路径；规则路径；规则函数；自动启动；隐藏启动；关闭启动；不重复启动；最多启动次数；延迟启动时间；最后运行时间；规则启动；规则逻辑；循环次数；循环间隔时间
+	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","delay_run_item","last_run_time","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
+	global RunKeyList=KeyList.Clone()	;对象拷贝
+	RunKeyList.RemoveAt(4)
+	RunKeyList.RemoveAt(3)
+	RunKeyList.RemoveAt(1)
 	;配置界面的热键
 	IniRead, ConfigKey,%iniFile%, run_any_ctrl_config, ConfigKey
 	IniRead, ConfigWinKey,%iniFile%, run_any_ctrl_config, ConfigWinKey
@@ -1162,75 +1191,18 @@ Plugins_Read:
 return
 ;~;[启动项数据]
 Run_Item_Read:
-	;参数列表：启动名+（启动路径；自动启动；隐藏启动；关闭启动；不重复启动；最多启动次数；最后运行时间；规则启动；规则逻辑；循环次数；循环间隔时间）
-	global runitemList:=Object(),autorunList:=Object(),hiderunList:=Object(),closerunList:=Object(),repeatrunList:=Object(),mostrunList:=Object(),lasttimeList:=Object(),rulerunList:=Object(),rulelogicList:=Object(),rulenumberList:=Object(),ruletimeList:=Object()
-	runitemVar:=autorunVar:=hiderunVar:=closerunVar:=repeatrunVar:=mostrunVar:=lasttimeVar:=rulerunVar:=rulelogicVar:=rulenumberVar:=ruletimeVar:=""
-	IniRead,runitemVar,%iniFile%,run_item
-	Loop, parse, runitemVar, `n, `r
+	For ki, kv in RunKeyList
 	{
-		itemList:=StrSplit(A_LoopField,"=")
-		IniRead, OutputVar, %iniFile%, run_item,% itemList[1]
-		runitemList[itemList[1]]:=OutputVar
-	}
-	IniRead,autorunVar,%iniFile%,auto_run_item
-	Loop, parse, autorunVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		autorunList[itemList[1]]:=itemList[2]
-	}
-	IniRead,hiderunVar,%iniFile%,hide_run_item
-	Loop, parse, hiderunVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		hiderunList[itemList[1]]:=itemList[2]
-	}
-	IniRead,closerunVar,%iniFile%,close_run_item
-	Loop, parse, closerunVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		closerunList[itemList[1]]:=itemList[2]
-	}
-	IniRead,repeatrunVar,%iniFile%,repeat_run_item
-	Loop, parse, repeatrunVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		repeatrunList[itemList[1]]:=itemList[2]
-	}
-	IniRead,mostrunVar,%iniFile%,most_run_item
-	Loop, parse, mostrunVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		mostrunList[itemList[1]]:=itemList[2]
-	}
-	IniRead,lasttimeVar,%iniFile%,last_run_time
-	Loop, parse, lasttimeVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		lasttimeList[itemList[1]]:=itemList[2]
-	}
-	IniRead,rulerunVar,%iniFile%,rule_run_item
-	Loop, parse, rulerunVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		rulerunList[itemList[1]]:=itemList[2]
-	}
-	IniRead,rulelogicVar,%iniFile%,rule_logic_item
-	Loop, parse, rulelogicVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		rulelogicList[itemList[1]]:=itemList[2]
-	}
-	IniRead,rulenumberVar,%iniFile%,rule_number_item
-	Loop, parse, rulenumberVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		rulenumberList[itemList[1]]:=itemList[2]
-	}
-	IniRead,ruletimeVar,%iniFile%,rule_time_item
-	Loop, parse, ruletimeVar, `n, `r
-	{
-		itemList:=StrSplit(A_LoopField,"=")
-		ruletimeList[itemList[1]]:=itemList[2]
+		;动态初始化
+		%kv%_List:=Object()
+		itemVar:=""
+		IniRead,itemVar,%iniFile%,%kv%
+		Loop, parse, itemVar, `n, `r
+		{
+			itemList:=StrSplit(A_LoopField,"=")
+			IniRead, OutputVar, %iniFile%, %kv%,% itemList[1]
+			%kv%_List[itemList[1]]:=OutputVar
+		}
 	}
 return
 ;~;[规则数据]
@@ -1255,7 +1227,7 @@ Rule_Item_Read:
 	}
 	stringtrimright, rulenameStr, rulenameStr, 1
 	;读取启动项设置的规则内容
-	For runn, runv in runitemList
+	For runn, runv in run_item_List
 	{
 		ruleArray:=Object()		;~规则内容队列
 		IniRead,runRuleVar,%iniFile%,%runn%

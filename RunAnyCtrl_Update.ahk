@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl检查更新Github上的最新版本】
 */
-global RunAnyCtrl_update_version:="1.4.26"
+global RunAnyCtrl_update_version:="2.4.27"
 SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 global RunAnyCtrl:="RunAnyCtrl"
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
@@ -175,5 +175,6 @@ if(notnewest){
 		{
 			URLDownloadToFile,%RunAnyGithubDir%/Lib/RunAnyCtrl.ico ,%A_ScriptDir%\Lib\RunAnyCtrl.ico
 		}
+		Run,https://github.com/hui-Zz/RunAnyCtrl/wiki/RunAnyCtrl历史更新版本
 	}
 }
