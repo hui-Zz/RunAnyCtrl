@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl公共规则函数库】
 */
-global rule_common_version:="1.4.18"
+global rule_common_version:="2.5.1"
 rule_true(){
 	return true
 }
@@ -16,6 +16,9 @@ rule_IsRun(runNamePath){
 	runValue:=RegExReplace(runNamePath,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 	SplitPath, runValue, name,, ext  ; 获取扩展名
 	if(ext="ahk"){
+		if(InStr(runNamePath,"..\")=1){
+			runNamePath:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(runNamePath,A_ScriptFullPath) : runNamePath
+		}
 		IfWinExist, %runNamePath% ahk_class AutoHotkey
 		{
 			return true
@@ -26,6 +29,31 @@ rule_IsRun(runNamePath){
 			return true
 	}
 	return false
+}
+/*
+【判断启动项今天是否运行过】
+runName 启动项名称+后缀
+*/
+rule_run_today(runName){
+	global last_run_time_List
+	lastRunTime:=""
+	if(IsObject(last_run_time_List) && last_run_time_List){
+		lastRunTime:=last_run_time_List[runName]
+	}else{
+		cmdResult:=IsFunc("cmdSilenceReturn") ? Func("cmdSilenceReturn").Call("dir %windir%\Prefetch /b/a/o-d |findstr /i """ runName """") : ""
+		flist:=StrSplit(cmdResult,"`r`n")
+		if(flist && flist[1]){
+			lastRun:=% A_WinDir . "\Prefetch\" . flist[1]
+			FileGetTime, lastRunTime, %lastRun%
+		}
+	}
+	if(lastRunTime){
+		t1 := A_Now
+		t1 -= %lastRunTime%, Days
+		return !t1 ? true : false
+	}else{
+		return false
+	}
 }
 /*
 【验证网络是否连接正常】

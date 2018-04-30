@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl检查更新Github上的最新版本】
 */
-global RunAnyCtrl_update_version:="2.4.27"
+global RunAnyCtrl_update_version:="2.5.1"
 SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 global RunAnyCtrl:="RunAnyCtrl"
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
@@ -135,10 +135,10 @@ For di, dname in PluginsList
 			versionStr:="下载失败"
 	}
 	if(versionStr && versionStr!="下载失败"){
-		if(updateMsg[dname]!=versionStr)
-			notnewest:=false
 		if(updateMsg[dname]<versionStr)
 			updateNeed[dname]:=true
+		if(updateMsg[dname]!=versionStr && updateMsg[dname]="无版本")
+			notnewest:=false
 	}
 	updateMsg[dname].="`t版本更新后=>`t"
 	updateMsg[dname].=versionStr ? versionStr : "无"

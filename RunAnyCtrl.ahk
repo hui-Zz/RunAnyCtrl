@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.4.27
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.1
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -178,7 +178,7 @@ LVApply:
 			else
 				Run,%FilePath%
 			LV_Modify(RowNumber, "", , , , , , , , , , , , "启动", A_Now)
-			IniWrite, %A_Now%, %iniFile%, last_run_time, %FileName%
+			IniWrite, %A_Now%, %iniFileLastRunTime%, last_run_time, %FileName%
 		}else if(menuItem="编辑"){
 			PostMessage, 0x111, 65401,,, %FilePath% ahk_class AutoHotkey
 		}else if(menuItem="挂起"){
@@ -259,15 +259,19 @@ Gui,2:Add, GroupBox,xm y+10 w500 h175,启动项设置
 Gui,2:Add, Text, xm+10 y35 w60, 启动项名：
 Gui,2:Add, Edit, x+5 yp-3 w400 vvFileName, %FileName%
 Gui,2:Add, Button, xm+5 yp+35 w60 GSetFilePath,启动路径
-Gui,2:Add, Button, xm+5 y+2 w60 GSetFileRelativePath,相对路径
-Gui,2:Add, Edit, x+10 yp-30 w400 r3 vvFilePath, %FilePath%
+if(IsFunc("funcPath2RelativeZz")){
+	Gui,2:Add, Button, xm+5 y+2 w60 GSetFileRelativePath,相对路径
+	Gui,2:Add, Edit, x+10 yp-30 w400 r3 vvFilePath, %FilePath%
+}else{
+	Gui,2:Add, Edit, x+10 yp w400 r3 vvFilePath, %FilePath%
+}
 Gui,2:Add, CheckBox, xm+10 y+5 Checked%FileAutoRun% vvFileAutoRun, 自动启动
 Gui,2:Add, CheckBox, x+15 yp Checked%FileHideRun% vvFileHideRun, 隐藏启动
 Gui,2:Add, CheckBox, x+10 yp Checked%FileCloseRun% vvFileCloseRun, 随RunAnyCtrl自动关闭
-Gui,2:Add, Text, xm+10 y+10 w85, 最多启动次数：
-Gui,2:Add, Edit, x+2 yp-3 Number w63 h20 vvFileMostRun, %FileMostRun%
-Gui,2:Add, Text, x+10 yp+3 w95, 延迟时间(毫秒)：
-Gui,2:Add, Edit, x+2 yp-3 Number w63 h20 vvFileDelayRun, %FileDelayRun%
+Gui,2:Add, Text, xm+10 y+10 w75, 最多启动次数:
+Gui,2:Add, Edit, x+2 yp-3 Number w50 h20 vvFileMostRun, %FileMostRun%
+Gui,2:Add, Text, x+10 yp+3 w85, 延迟时间(毫秒):
+Gui,2:Add, Edit, x+2 yp-3 Number w90 h20 vvFileDelayRun, %FileDelayRun%
 Gui,2:Add, CheckBox, x+20 yp+3 Checked%FileRepeatRun% vvFileRepeatRun, 不重复启动
 if(!IsFunc("rule_IsRun")){
 	Gui,2:Add, Text, x+2 yp CRed w50, (不可用)
@@ -276,9 +280,9 @@ Gui,2:Add, GroupBox,xm y+15 w500 h350,规则项设置
 Gui,2:Add, CheckBox, xm+10 yp+25 w130 Checked%FileRuleRun% vvFileRuleRun, 使用规则自动启动
 Gui,2:Add, Radio, x+20 yp Checked%FileRuleLogic1% vvFileRuleLogic1, 与(全部匹配)(&A)
 Gui,2:Add, Radio, x+5 yp Checked%FileRuleLogic2% vvFileRuleLogic2, 或(部分匹配)(&O)
-Gui,2:Add, Text, xm+10 y+10 w110, 规则循环最大次数：
+Gui,2:Add, Text, xm+10 y+10 w100, 规则循环最大次数:
 Gui,2:Add, Edit, x+2 yp-3 Number w50 h20 vvFileRuleNumber, %FileRuleNumber%
-Gui,2:Add, Text, x+20 yp w120, 循环间隔时间(毫秒)：
+Gui,2:Add, Text, x+20 yp+3 w110, 循环间隔时间(毫秒):
 Gui,2:Add, Edit, x+2 yp-3 Number w100 h20 vvFileRuleTime, %FileRuleTime%
 Gui,2:Add, Button, xm+10 y+15 w70 GLVFuncAdd, 增加规则
 Gui,2:Add, Button, x+10 yp w70 GLVFuncEdit, 修改规则
@@ -597,44 +601,19 @@ return
 ;[全路径转换为RunAnyCtrl的相对路径]
 SetFileRelativePath:
 	Gui,2:Submit, NoHide
-	SplitPath, vFilePath, fname, fdir, fext, , fdrive
-	SplitPath, A_ScriptFullPath, name, dir, ext, , drive
-	if(!vFilePath || !fdir || !fdrive)
-		return
-	if(fdrive!=drive){
-		ToolTip, 与RunAnyCtrl不在同一磁盘，不能转换为相对路径,155,130
+	funcResult:=IsFunc("funcPath2RelativeZz") ? Func("funcPath2RelativeZz").Call(vFilePath,A_ScriptFullPath) : 0
+	if(funcResult=-1){
+		ToolTip, 路径有误,155,180
 		SetTimer,RemoveToolTip,5000
 		return
 	}
-	;下级目录直接去掉RunAnyCtrl路径
-	if(InStr(vFilePath,dir)){
-		filePath:=StrReplace(vFilePath,dir)
-		StringTrimLeft, filePath, filePath, 1
-		GuiControl, 2:, vFilePath, %filePath%
+	if(funcResult=-2){
+		ToolTip, 与RunAnyCtrl不在同一磁盘，不能转换为相对路径,155,180
+		SetTimer,RemoveToolTip,5000
 		return
 	}
-	;上级目录根据层级递进添加多级前缀..\
-	pathList:=StrSplit(dir,"\")
-	Loop,% pathList.MaxIndex()
-	{
-		pathStr:=""
-		upperStr:=""
-		;每次向上递进，找到与启动项相匹配路径段替换成..\
-		Loop,% pathList.MaxIndex()-A_Index
-		{
-			pathStr.=pathList[A_Index] . "\"
-		}
-		StringTrimRight, pathStr, pathStr, 1
-		if(InStr(fdir,pathStr)){
-			Loop,% A_Index
-			{
-				upperStr.="..\"
-			}
-			StringTrimRight, upperStr, upperStr, 1
-			filePath:=StrReplace(vFilePath,pathStr,upperStr)
-			GuiControl, 2:, vFilePath, %filePath%
-			return
-		}
+	if(funcResult){
+		GuiControl, 2:, vFilePath, %funcResult%
 	}
 return
 LVSet:
@@ -680,7 +659,7 @@ LVRule:
 	Gui,R:Default
 	Gui,R:+Resize
 	Gui,R:Font, s10, Microsoft YaHei
-	Gui,R:Add, Listview, xm w600 r15 grid AltSubmit BackgroundF6F6E8 vRuleLV glistrule, 规则名|规则函数|状态|规则路径
+	Gui,R:Add, Listview, xm w600 r18 grid AltSubmit BackgroundF6F6E8 vRuleLV glistrule, 规则名|规则函数|状态|规则路径
 	;[读取规则内容写入列表]
 	GuiControl, -Redraw, RuleLV
 	For ki, kv in ruleitemList
@@ -1043,8 +1022,6 @@ Func_Effect(runn, runv){
 		;启动项是否超出最多运行次数
 		if(!most_run_item_List[runn] || mostrunIndex[runn] < most_run_item_List[runn]){
 			Run_Run_Run(runn,runv)
-			WriteLastRunTimeFunc%runn%:=Func("Write_Last_Run_Time").Bind(runn,A_Now)	;写运行时间定时器
-			SetTimer,% WriteLastRunTimeFunc%runn%, %WriteLastRunTime%
 			if(most_run_item_List[runn])
 				mostrunIndex[runn]++
 		}
@@ -1072,12 +1049,10 @@ AutoRun_Effect:
 					continue
 				}
 				Run_Run_Run(runn,runv)
-				WriteLastRunTimeFunc%runn%:=Func("Write_Last_Run_Time").Bind(runn,A_Now)	;写运行时间定时器
-				SetTimer,% WriteLastRunTimeFunc%runn%, %WriteLastRunTime%
 			}
 		}
 	} catch e {
-			MsgBox,16,自动启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
+		MsgBox,16,自动启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
 	}
 return
 ;~;[随RunAnyCtrl自动关闭]
@@ -1103,6 +1078,7 @@ Run_Run_Run(runn,runv){
 			Run,%runv%,, hide
 		else
 			Run,%runv%
+		IniWrite, %A_Now%, %iniFileLastRunTime%, last_run_time, %runn%
 	} catch e {
 		MsgBox,16,启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
 	}
@@ -1110,10 +1086,6 @@ Run_Run_Run(runn,runv){
 Delay_Run_Effect(runn,runv){
 	Run_Run_Run(runn,runv)
 	SetTimer,% delayRunEffect%runn%, Off
-}
-Write_Last_Run_Time(runn,runTime){
-	IniWrite, %runTime%, %iniFile%, last_run_time, %runn%
-	try SetTimer,% WriteLastRunTimeFunc%runn%, Off
 }
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 ;~;[初始化]
@@ -1123,24 +1095,33 @@ Var_Set:
 	RegRead, AutoRun, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 	AutoRun:=AutoRun ? 1 : 0
 	;配置列表：RunAnyCtrl配置；启动路径；规则路径；规则函数；自动启动；隐藏启动；关闭启动；不重复启动；最多启动次数；延迟启动时间；最后运行时间；规则启动；规则逻辑；循环次数；循环间隔时间
-	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","delay_run_item","last_run_time","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
+	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","delay_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
 	global RunKeyList=KeyList.Clone()	;对象拷贝
 	RunKeyList.RemoveAt(4)
 	RunKeyList.RemoveAt(3)
 	RunKeyList.RemoveAt(1)
+	gosub,Init_Set
 	;配置界面的热键
 	IniRead, ConfigKey,%iniFile%, run_any_ctrl_config, ConfigKey
 	IniRead, ConfigWinKey,%iniFile%, run_any_ctrl_config, ConfigWinKey
 	ConfigHotKey:=ConfigWinKey ? "#" . ConfigKey : ConfigKey
 	try Hotkey,%ConfigHotKey%,LV_Show,On
 	global mostrunIndex:=Object()
-	;等待一段时间(OneDrive同步结束)后写最后运行时间到配置，避免与OneDrive文件版本冲突
-	global WriteLastRunTime:=100
-	IniRead, WriteLastRunTime,%iniFile%, run_any_ctrl_config, WriteLastRunTime, 100
-	;配置文件初始化操作
+	global iniFileLastRunTime:=A_AppData "\RunAnyCtrl\RACLastRunTime.ini"
+	gosub,Plugins_Read
+return
+;~;[配置文件初始化操作]
+Init_Set:
 	IfNotExist,%A_ScriptDir%\Lib
 	{
 		FileCreateDir, %A_ScriptDir%\Lib
+	}
+	IfNotExist,%A_AppData%\RunAnyCtrl
+	{
+		FileCreateDir, %A_AppData%\RunAnyCtrl
+	}
+	if(FileExist(iniFileLastRunTime)){
+		FileAppend,"",%iniFileLastRunTime%
 	}
 	IfNotExist,%iniFile%
 	{
@@ -1177,9 +1158,8 @@ Var_Set:
 		FileAppend,%content%,%pluginsFile%
 		Reload
 	}
-	gosub,Plugins_Read
 return
-;~ [规则插件内容]
+;~;[规则插件内容]
 Plugins_Read:
 	global pluginsList:=Object()
 	global pluginsContent:=""
@@ -1203,6 +1183,13 @@ Run_Item_Read:
 			IniRead, OutputVar, %iniFile%, %kv%,% itemList[1]
 			%kv%_List[itemList[1]]:=OutputVar
 		}
+	}
+	last_run_time_List:=Object()
+	IniRead,itemVar,%iniFileLastRunTime%,last_run_time
+	Loop, parse, itemVar, `n, `r
+	{
+		itemList:=StrSplit(A_LoopField,"=")
+		last_run_time_List[itemList[1]]:=itemList[2]
 	}
 return
 ;~;[规则数据]

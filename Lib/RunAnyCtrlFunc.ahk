@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl特殊函数调用库】
 */
-global RunAnyCtrlFunc_version:="1.4.9.1"
+global RunAnyCtrlFunc_version:="2.5.1"
 /*
 【自动识别AHK脚本中的函数 by hui-Zz】（RunAnyCtrl使用中，勿删慎改）
 ahkPath AHK脚本路径
@@ -33,6 +33,81 @@ getAhkFuncZz(ahkPath){
 	return funcnameStr
 }
 /*
+【绝对路径转换为相对路径 by hui-Zz】
+fPath 被转换的全路径，可带文件名
+ahkPath 相对参照的执行脚本完整全路径，带文件名
+return -1 路径参数有误
+return -2 被转换路径和参照路径不在同一磁盘，不能转换
+*/
+funcPath2RelativeZz(fPath,ahkPath){
+	SplitPath, fPath, fname, fdir, fext, , fdrive
+	SplitPath, ahkPath, name, dir, ext, , drive
+	if(!fPath || !ahkPath || !dir || !fdir || !fdrive)
+		return -1
+	if(fdrive!=drive){
+		return -2
+	}
+	;下级目录直接去掉参照目录路径
+	if(InStr(fPath,dir)){
+		filePath:=StrReplace(fPath,dir)
+		StringTrimLeft, filePath, filePath, 1
+		return filePath
+	}
+	;上级目录根据层级递进添加多级前缀..\
+	pathList:=StrSplit(dir,"\")
+	Loop,% pathList.MaxIndex()
+	{
+		pathStr:=""
+		upperStr:=""
+		;每次向上递进，找到与启动项相匹配路径段替换成..\
+		Loop,% pathList.MaxIndex()-A_Index
+		{
+			pathStr.=pathList[A_Index] . "\"
+		}
+		StringTrimRight, pathStr, pathStr, 1
+		if(InStr(fdir,pathStr)){
+			Loop,% A_Index
+			{
+				upperStr.="..\"
+			}
+			StringTrimRight, upperStr, upperStr, 1
+			filePath:=StrReplace(fPath,pathStr,upperStr)
+			return filePath
+		}
+	}
+	return false
+}
+/*
+【相对路径转换为绝对路径 by hui-Zz】
+aPath 被转换的相对路径，可带文件名
+ahkPath 相对参照的执行脚本完整全路径，带文件名
+return -1 路径参数有误
+*/
+funcPath2AbsoluteZz(aPath,ahkPath){
+	SplitPath, aPath, fname, fdir, fext, , fdrive
+	SplitPath, ahkPath, name, dir, ext, , drive
+	if(!aPath || !ahkPath)
+		return -1
+	;下级目录直接加上参照目录路径
+	if(!fdrive && !InStr(aPath,"..")){
+		return dir . "\" . aPath
+	}
+	pathList:=StrSplit(dir,"\")
+	;上级目录根据层级递进添加多级路径
+	if(InStr(aPath,"..\")=1){
+		aPathStr:=RegExReplace(aPath, "\.\.\\", , PointCount)
+		pathStr:=""
+		;每次向上递进，找到添加与启动项相匹配路径段
+		Loop,% pathList.MaxIndex()-PointCount
+		{
+			pathStr.=pathList[A_Index] . "\"
+		}
+		filePath:=pathStr . aPathStr
+		return filePath
+	}
+	return false
+}
+/*
 【返回cmd命令的结果值 @hui-Zz】
 */
 cmdReturn(command){
@@ -44,30 +119,15 @@ cmdReturn(command){
     return exec.StdOut.ReadAll()
 }
 /*
-【缓存到批处理中后台静默运行cmd命令，并用缓存文本取到结果值 @hui-Zz】
+【后台静默运行cmd命令缓存文本取值 @hui-Zz】
 */
 cmdSilenceReturn(command){
 	CMDReturn:=""
 	cmdFN:="RunAnyCtrlCMD"
-	if(FileExist(A_Temp "\" cmdFN ".bat"))
-		FileDelete,%A_Temp%\%cmdFN%.bat
-	if(FileExist(A_Temp "\" cmdFN ".txt"))
-		FileDelete,%A_Temp%\%cmdFN%.txt
 	try{
-		batResult:=command . " >> %Temp%\" cmdFN ".txt"
-		FileAppend,%batResult%,%A_Temp%\%cmdFN%.bat
-		shell := ComObjCreate("WScript.Shell")
-		shell.run("%Temp%\" cmdFN ".bat",0)
-		Loop,100
-		{
-			if(FileExist(A_Temp "\" cmdFN ".txt"))
-				FileRead, CMDReturn, %A_Temp%\%cmdFN%.txt
-			if(CMDReturn)
-				break
-			Sleep,20
-		}
-		FileDelete,%A_Temp%\%cmdFN%.bat
-		FileDelete,%A_Temp%\%cmdFN%.txt
+		RunWait,% ComSpec " /C " command " > ""%Temp%\" cmdFN ".log""",, Hide
+		FileRead, CMDReturn, %A_Temp%\%cmdFN%.log
+		FileDelete,%A_Temp%\%cmdFN%.log
 	}catch{}
 	return CMDReturn
 }
@@ -85,6 +145,38 @@ cmdClipReturn(command){
 	}catch{}
 	Clipboard:=Clip_Saved
 	return cmdInfo
+}
+/*
+【StdoutToVar不弹窗不缓存取cmd命令结果】
+*/
+StdoutToVar_CreateProcess(sCmd, sEncoding:="CP0", sDir:="", ByRef nExitCode:=0) {
+    DllCall( "CreatePipe",           PtrP,hStdOutRd, PtrP,hStdOutWr, Ptr,0, UInt,0 )
+    DllCall( "SetHandleInformation", Ptr,hStdOutWr, UInt,1, UInt,1                 )
+ 
+            VarSetCapacity( pi, (A_PtrSize == 4) ? 16 : 24,  0 )
+    siSz := VarSetCapacity( si, (A_PtrSize == 4) ? 68 : 104, 0 )
+    NumPut( siSz,      si,  0,                          "UInt" )
+    NumPut( 0x100,     si,  (A_PtrSize == 4) ? 44 : 60, "UInt" )
+    NumPut( hStdInRd,  si,  (A_PtrSize == 4) ? 56 : 80, "Ptr"  )
+    NumPut( hStdOutWr, si,  (A_PtrSize == 4) ? 60 : 88, "Ptr"  )
+    NumPut( hStdOutWr, si,  (A_PtrSize == 4) ? 64 : 96, "Ptr"  )
+ 
+    If ( !DllCall( "CreateProcess", Ptr,0, Ptr,&sCmd, Ptr,0, Ptr,0, Int,True, UInt,0x08000000
+                                  , Ptr,0, Ptr,sDir?&sDir:0, Ptr,&si, Ptr,&pi ) )
+        Return ""
+      , DllCall( "CloseHandle", Ptr,hStdOutWr )
+      , DllCall( "CloseHandle", Ptr,hStdOutRd )
+ 
+    DllCall( "CloseHandle", Ptr,hStdOutWr ) ; The write pipe must be closed before reading the stdout.
+    VarSetCapacity(sTemp, 4095)
+    While ( DllCall( "ReadFile", Ptr,hStdOutRd, Ptr,&sTemp, UInt,4095, PtrP,nSize, Ptr,0 ) )
+        sOutput .= StrGet(&sTemp, nSize, sEncoding)
+ 
+    DllCall( "GetExitCodeProcess", Ptr,NumGet(pi,0), UIntP,nExitCode )
+    DllCall( "CloseHandle",        Ptr,NumGet(pi,0)                  )
+    DllCall( "CloseHandle",        Ptr,NumGet(pi,A_PtrSize)          )
+    DllCall( "CloseHandle",        Ptr,hStdOutRd                     )
+    Return sOutput
 }
 /*
 通过第三方接口获取IP地址等信息 @hui-Zz
