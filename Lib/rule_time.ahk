@@ -1,7 +1,19 @@
 ﻿/*
 【RunAnyCtrl时间规则函数库】
 */
-global rule_time_version:="1.4.17"
+global rule_time_version:="2.5.2"
+/*
+验证月份(01-12) @hui-Zz
+*/
+rule_today_month(month){
+	return A_MM=month ? true : false
+}
+/*
+验证日期(01-31) @hui-Zz
+*/
+rule_today_day(day){
+	return A_DD=day ? true : false
+}
 /*
 验证星期几(1-7)，1表示星期天 @hui-Zz
 */

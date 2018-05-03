@@ -1,16 +1,22 @@
 ﻿/*
 【RunAnyCtrl检查更新Github上的最新版本】
 */
-global RunAnyCtrl_update_version:="2.5.1"
+global RunAnyCtrl_update_version:="2.5.3"
 SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 global RunAnyCtrl:="RunAnyCtrl"
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 updateMsg:=Object()
 updateNeed:=Object()
 notnewest:=true
-RunAnyGithubDir:="https://raw.githubusercontent.com/hui-Zz/RunAnyCtrl/master"
 DownList:=["RunAnyCtrl","RunAnyCtrlFunc","JSON","rule_common","rule_time"]
 ;[下载最新的更新脚本]
+lpszUrl:="https://raw.githubusercontent.com"
+RunAnyGithubDir:=lpszUrl . "/hui-Zz/RunAnyCtrl/master"
+network:=DllCall("Wininet.dll\InternetCheckConnection", "Ptr", &lpszUrl, "UInt", 0x1, "UInt", 0x0, "Int")
+if(!network){
+	MsgBox,网络异常，无法从https://github.com/hui-Zz/RunAnyCtrl上读取最新版本文件
+	return
+}
 URLDownloadToFile,%RunAnyGithubDir%/RunAnyCtrl_Update.ahk ,%A_Temp%\temp_RunAnyCtrl_Update.ahk
 versionReg=iS)^\t*\s*global RunAnyCtrl_update_version:="([\d\.]*)"
 Loop, read, %A_Temp%\temp_RunAnyCtrl_Update.ahk

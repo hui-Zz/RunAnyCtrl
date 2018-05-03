@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.1
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.3
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="2.4.27"
+global RunAnyCtrl_version:="2.5.3"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -85,11 +85,11 @@ Gui,Add, Listview, xm w900 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|
 GuiControl, -Redraw, RunAnyLV
 For runn, runv in run_item_List
 {
-	runStatus:=Check_IsRun(runv) ? "启动" : "x"
+	runStatus:=Check_IsRun(runv) ? "启动" : ""
 	runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 	SplitPath, runValue,,, FileExt  ; 获取文件扩展名.
 	runType:=FileExt ? FileExt : RegExMatch(runv,"iS)([\w-]+://?|www[.]).*") ? "网址" : "未知"
-	LV_Add("", runn, runType, auto_run_item_List[runn] ? "是" : "x", hide_run_item_List[runn] ? "是" : "x", close_run_item_List[runn] ? "是" : "x", repeat_run_item_List[runn] ? "是" : "x", most_run_item_List[runn], rule_run_item_List[runn] ? "是" : "x", rule_run_item_List[runn] ? rule_logic_item_List[runn] ? "与" : "或" : "x", rule_number_item_List[runn], rule_time_item_List[runn], runStatus, last_run_time_List[runn], runv)
+	LV_Add("", runn, runType, auto_run_item_List[runn] ? "是" : "", hide_run_item_List[runn] ? "是" : "", close_run_item_List[runn] ? "是" : "", repeat_run_item_List[runn] ? "是" : "", most_run_item_List[runn], rule_run_item_List[runn] ? "是" : "", rule_run_item_List[runn] ? rule_logic_item_List[runn] ? "与" : "或" : "", rule_number_item_List[runn], rule_time_item_List[runn], runStatus, last_run_time_List[runn], runv)
 }
 GuiControl, +Redraw, RunAnyLV
 LVMenu("LVMenu")
@@ -192,11 +192,11 @@ LVApply:
 			SplitPath, runValue, name,, ext  ; 获取扩展名
 			if(ext="ahk"){
 				PostMessage, 0x111, 65405,,, %FilePath% ahk_class AutoHotkey
-				runStatus:="x"
+				runStatus:=""
 			}else if(name){
 				Process,Close,%name%
 				if ErrorLevel
-					runStatus:="x"
+					runStatus:=""
 			}
 			LV_Modify(RowNumber, "", , , , , , , , , , , , runStatus)
 		}else if(menuItem="删除"){
@@ -367,7 +367,7 @@ LVSave:
 	SplitPath, runValue,,, FileExt  ; 获取文件扩展名.
 	runType:=FileExt ? FileExt : RegExMatch(vFilePath,"iS)([\w-]+://?|www[.]).*") ? "网址" : "未知"
 	if(menuItem="新建"){
-		LV_Add("",vFileName,runType,vFileAutoRun ? "是" : "x",vFileHideRun ? "是" : "x",vFileCloseRun ? "是" : "x",vFileRepeatRun ? "是" : "x",vFileMostRun,vFileRuleRun ? "是" : "x",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "x",vFileRuleNumber,vFileRuleTime,"x",,vFilePath)
+		LV_Add("",vFileName,runType,vFileAutoRun ? "是" : "",vFileHideRun ? "是" : "",vFileCloseRun ? "是" : "",vFileRepeatRun ? "是" : "",vFileMostRun,vFileRuleRun ? "是" : "",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "",vFileRuleNumber,vFileRuleTime,"",,vFilePath)
 	}else{
 		;~ 删除原有启动项其他配置，不包含规则项
 		For ki, kv in KeyList
@@ -376,7 +376,7 @@ LVSave:
 				continue
 			IniDelete, %iniFile%, %kv%, %FileName%
 		}
-		LV_Modify(RunRowNumber,"",vFileName,runType,vFileAutoRun ? "是" : "x",vFileHideRun ? "是" : "x",vFileCloseRun ? "是" : "x",vFileRepeatRun ? "是" : "x",vFileMostRun,vFileRuleRun ? "是" : "x",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "x",vFileRuleNumber,vFileRuleTime,,,vFilePath)
+		LV_Modify(RunRowNumber,"",vFileName,runType,vFileAutoRun ? "是" : "",vFileHideRun ? "是" : "",vFileCloseRun ? "是" : "",vFileRepeatRun ? "是" : "",vFileMostRun,vFileRuleRun ? "是" : "",vFileRuleRun ? vFileRuleLogic ? "与" : "或" : "",vFileRuleNumber,vFileRuleTime,,,vFilePath)
 	}
 	Gui,2:Destroy
 	GuiControl, 1:+Redraw, RunAnyLV
@@ -416,7 +416,7 @@ LVImport:
 				TrayTip,,导入项中有已存在的相同文件名启动项，不会导入,3,1
 				continue
 			}
-			LV_Add("", name_no_ext, ext, "x", "x", "x", "x", , "x", "x", , ,"x", , fullPath)
+			LV_Add("", name_no_ext, ext, "", "", "", "", , "", "", , ,"", , fullPath)
 			IniWrite, %fullPath%, %iniFile%, run_item, %name_no_ext%
 		}
 	}
@@ -973,6 +973,7 @@ return
 */
 Func_Effect(runn, runv){
 	global
+	Critical
 	effectFlag:=false
 	For k, v in runruleitemList[runn]	;循环规则内容
 	{

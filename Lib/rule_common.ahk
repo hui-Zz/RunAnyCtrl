@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl公共规则函数库】
 */
-global rule_common_version:="2.5.1"
+global rule_common_version:="2.5.3"
 rule_true(){
 	return true
 }
@@ -48,8 +48,9 @@ rule_run_today(runName){
 		}
 	}
 	if(lastRunTime){
-		t1 := A_Now
-		t1 -= %lastRunTime%, Days
+		FormatTime, t1, %A_Now%, yyyyMMdd
+		FormatTime, t2, %lastRunTime%, yyyyMMdd
+		t1 -= %t2%, Days
 		return !t1 ? true : false
 	}else{
 		return false
