@@ -633,7 +633,8 @@ LVSetSave:
 	if(vAutoRun!=AutoRun){
 		AutoRun:=vAutoRun
 		if(AutoRun){
-			RegWrite, REG_SZ, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl, %A_ScriptFullPath%
+			scriptName:=FileExist("RunAnyCtrl.exe") ? "RunAnyCtrl.exe" : A_ScriptName
+			RegWrite, REG_SZ, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl, %A_ScriptDir%\%scriptName%
 		}else{
 			RegDelete, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 		}
