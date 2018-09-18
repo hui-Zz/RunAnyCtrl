@@ -173,13 +173,24 @@ LVApply:
 		LV_GetText(FileStatus, RowNumber, ColumnStatus)
 		LV_GetText(FilePath, RowNumber, ColumnPath)
 		if(menuItem="启动"){
-			if(FileHideRun="是"){
-				Run,%FilePath%,, hide
-			}else{
-				Run,%FilePath%
+			try{
+				if(InStr(FilePath,"..\")=1){
+					FilePath:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(FilePath,A_ScriptFullPath) : FilePath
+				}
+				SplitPath, FilePath, , dir, ext
+				if(dir){
+					SetWorkingDir,%dir%
+				}
+				if(FileHideRun="是"){
+					Run,%FilePath%,, hide
+				}else{
+					Run,%FilePath%
+				}
+				LV_Modify(RowNumber, "", , , , , , , , , , , , "启动", A_Now)
+				IniWrite, %A_Now%, %iniFileLastRunTime%, last_run_time, %FileName%
+			} finally {
+				SetWorkingDir,%A_ScriptDir%
 			}
-			LV_Modify(RowNumber, "", , , , , , , , , , , , "启动", A_Now)
-			IniWrite, %A_Now%, %iniFileLastRunTime%, last_run_time, %FileName%
 		}else if(menuItem="编辑"){
 			PostMessage, 0x111, 65401,,, %FilePath% ahk_class AutoHotkey
 		}else if(menuItem="挂起"){
@@ -1083,9 +1094,13 @@ return
 Run_Run_Run(runn,runv){
 	global
 	try {
-		SplitPath, runv, , dir, ext
-		if(dir)
+		if(InStr(runv,"..\")=1){
+			FilePath:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(runv,A_ScriptFullPath) : runv
+		}
+		SplitPath, FilePath, , dir, ext
+		if(dir){
 			SetWorkingDir,%dir%
+		}
 		;设定为隐藏启动
 		if(hide_run_item_List[runn]){
 			Run,%runv%,, hide
