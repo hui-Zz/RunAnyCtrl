@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.3
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.4
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="2.5.3"
+global RunAnyCtrl_version:="2.5.4"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -53,7 +53,7 @@ Gosub,Rule_Effect
 Gosub,AutoRun_Effect
 OnExit,ExitSub
 ;每月1日检查版本更新
-if(A_DD=01){
+if(A_DD=01 || A_DD=15){
 	Gosub,Github_Update
 }
 return
@@ -173,10 +173,11 @@ LVApply:
 		LV_GetText(FileStatus, RowNumber, ColumnStatus)
 		LV_GetText(FilePath, RowNumber, ColumnPath)
 		if(menuItem="启动"){
-			if(FileHideRun="是")
+			if(FileHideRun="是"){
 				Run,%FilePath%,, hide
-			else
+			}else{
 				Run,%FilePath%
+			}
 			LV_Modify(RowNumber, "", , , , , , , , , , , , "启动", A_Now)
 			IniWrite, %A_Now%, %iniFileLastRunTime%, last_run_time, %FileName%
 		}else if(menuItem="编辑"){
@@ -191,6 +192,9 @@ LVApply:
 			runValue:=RegExReplace(FilePath,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 			SplitPath, runValue, name,, ext  ; 获取扩展名
 			if(ext="ahk"){
+				if(InStr(FilePath,"..\")=1){
+					FilePath:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(FilePath,A_ScriptFullPath) : FilePath
+				}
 				PostMessage, 0x111, 65405,,, %FilePath% ahk_class AutoHotkey
 				runStatus:=""
 			}else if(name){
@@ -573,6 +577,7 @@ GuiContextMenu:
 	}
 return
 GuiSize:
+RGuiSize:
 	if A_EventInfo = 1
 		return
 	GuiControl, Move, RunAnyLV, % "H" . (A_GuiHeight-10) . " W" . (A_GuiWidth - 20)
@@ -1065,7 +1070,10 @@ AutoClose_Effect:
 			runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 			SplitPath, runValue, name,, ext  ; 获取扩展名
 			if(ext="ahk"){
-				PostMessage, 0x111, 65405,,, %FilePath% ahk_class AutoHotkey
+				if(InStr(runv,"..\")=1){
+					runv:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(runv,A_ScriptFullPath) : runv
+				}
+				PostMessage, 0x111, 65405,,, %runv% ahk_class AutoHotkey
 			}else if(name){
 				Process,Close,%name%
 			}
@@ -1075,14 +1083,20 @@ return
 Run_Run_Run(runn,runv){
 	global
 	try {
+		SplitPath, runv, , dir, ext
+		if(dir)
+			SetWorkingDir,%dir%
 		;设定为隐藏启动
-		if(hide_run_item_List[runn])
+		if(hide_run_item_List[runn]){
 			Run,%runv%,, hide
-		else
+		}else{
 			Run,%runv%
+		}
 		IniWrite, %A_Now%, %iniFileLastRunTime%, last_run_time, %runn%
 	} catch e {
 		MsgBox,16,启动出错,% "启动项名：" runn "`n启动项路径：" runv "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
+	} finally {
+		SetWorkingDir,%A_ScriptDir%
 	}
 }
 Delay_Run_Effect(runn,runv){
@@ -1267,7 +1281,8 @@ return
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 MenuTray:
 	Menu,Tray,NoStandard
-	zzIcon:=A_ScriptDir "\Lib\RunAnyCtrl.ico"
+	zzIconLib:=FileExist(A_ScriptDir "\RunAnyCtrl.ico") ? "" : "\Lib\"
+	zzIcon:=A_ScriptDir zzIconLib "\RunAnyCtrl.ico"
 	if(FileExist(zzIcon))
 		Menu,Tray,Icon,%zzIcon%,1
 	else

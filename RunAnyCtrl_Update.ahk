@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl检查更新Github上的最新版本】
 */
-global RunAnyCtrl_update_version:="2.5.3"
+global RunAnyCtrl_update_version:="2.5.4"
 SetWorkingDir,%A_ScriptDir%	;~脚本当前工作目录
 global RunAnyCtrl:="RunAnyCtrl"
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
@@ -157,6 +157,17 @@ For dname, msg in updateMsg
 	}
 }
 if(notnewest){
+	if(A_DD=01 || A_DD=15){
+		;当天已经检查过就不再更新
+		if(FileExist(A_Temp "\temp_RunAnyCtrl.ahk")){
+			FileGetTime,tempMTime, %A_Temp%\temp_RunAnyCtrl.ahk, M  ; 获取修改时间.
+			t1 := A_Now
+			t1 -= %tempMTime%, Days
+			FormatTime,tempTimeDD,%tempMTime%,dd
+			if(t1=0 && (tempTimeDD=01 || tempTimeDD=15))
+				return
+		}
+	}
 	msgResult.="RunAnyCtrl已经是最新版本。"
 	TrayTip,,%msgResult%,3,1
 }else{
