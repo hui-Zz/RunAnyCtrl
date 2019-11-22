@@ -46,7 +46,7 @@ if(!ahkExePath || !FileExist(ahkExePath)){
 if(A_AhkVersion < 1.1.19){
 	TrayTip,,由于你的AHK版本没有高于1.1.19，可能会影响到部分功能的使用,3,1
 }
-if(!A_IsAdmin && !A_IsCompiled)
+if(!A_IsAdmin && AdminRun && !A_IsCompiled)
 {
 	Run *RunAs %ahkExePath% "%A_ScriptFullPath%"
 	ExitApp
@@ -648,6 +648,7 @@ LVSet:
 	Gui,S:Destroy
 	Gui,S:Margin,50,30
 	Gui,S:Add, Checkbox,Checked%AutoRun% xm yp+10 h30 vvAutoRun,开机自动启动
+	Gui,S:Add, Checkbox,Checked%AdminRun% x+5 yp h30 vvAdminRun,管理员权限启动
 	Gui,S:Add, GroupBox,xm-10 y+10 w225 h55,RunAnyCtrl配置自定义热键 %ConfigHotKey%
 	Gui,S:Add, Hotkey,xm yp+20 w150 vvConfigKey,%ConfigKey%
 	Gui,S:Add, Checkbox,Checked%ConfigWinKey% xm+155 yp+3 vvConfigWinKey,Win
@@ -666,6 +667,10 @@ LVSetSave:
 		}else{
 			RegDelete, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 		}
+		reloadFlag:=true
+	}
+	if(vAdminRun!=AdminRun){
+		IniWrite,%vAdminRun%,%iniFile%,run_any_ctrl_config,AdminRun
 		reloadFlag:=true
 	}
 	if(vConfigKey!=ConfigKey){
@@ -1138,6 +1143,8 @@ Var_Set:
 	;~;[RunAnyCtrl设置参数]
 	RegRead, AutoRun, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, RunAnyCtrl
 	AutoRun:=AutoRun ? 1 : 0
+	IniRead, AdminRun,%iniFile%, run_any_ctrl_config, AdminRun
+	AdminRun:=AdminRun=1 ? 1 : 0
 	;配置列表：RunAnyCtrl配置；启动路径；规则路径；规则函数；自动启动；隐藏启动；关闭启动；不重复启动；最多启动次数；延迟启动时间；最后运行时间；规则启动；规则逻辑；循环次数；循环间隔时间
 	global KeyList:=["run_any_ctrl_config","run_item","rule_item","func_item","auto_run_item","hide_run_item","close_run_item","repeat_run_item","most_run_item","delay_run_item","rule_run_item","rule_logic_item","rule_number_item","rule_time_item"]
 	global RunKeyList=KeyList.Clone()	;对象拷贝
