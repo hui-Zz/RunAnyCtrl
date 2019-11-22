@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.4
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.5
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,12 +17,13 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="2.5.4"
+global RunAnyCtrl_version:="2.5.5"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
 global menuItem:=""
 global PluginsList:="RunAnyCtrlFunc,JSON,rule_common,rule_time"
+global AdminMode:=A_IsAdmin ? "【管理员运行】" : ""
 #Include *i %A_ScriptDir%\Lib\JSON.ahk
 #Include *i %A_ScriptDir%\Lib\RunAnyCtrlFunc.ahk
 Gosub,Var_Set		;~参数初始化
@@ -44,6 +45,11 @@ if(!ahkExePath || !FileExist(ahkExePath)){
 }
 if(A_AhkVersion < 1.1.19){
 	TrayTip,,由于你的AHK版本没有高于1.1.19，可能会影响到部分功能的使用,3,1
+}
+if(!A_IsAdmin && !A_IsCompiled)
+{
+	Run *RunAs %ahkExePath% "%A_ScriptFullPath%"
+	ExitApp
 }
 gosub,MenuTray
 gosub,Run_Item_Read
@@ -96,7 +102,7 @@ LVMenu("LVMenu")
 LVMenu("ahkGuiMenu")
 Gui, Menu, ahkGuiMenu
 LVModifyCol(38,ColumnAutoRun,ColumnHideRun,ColumnCloseRun,ColumnRepeatRun,ColumnRuleRun,ColumnRuleLogic)  ; 根据内容自动调整每列的大小.
-Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018 %RunAnyCtrl_version%
+Gui,Show, , %RunAnyCtrl% 启动控制器 by hui-Zz 2018 %RunAnyCtrl_version% %AdminMode%
 return
 
 LVMenu(addMenu){
@@ -177,8 +183,9 @@ LVApply:
 				if(InStr(FilePath,"..\")=1){
 					FilePath:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(FilePath,A_ScriptFullPath) : FilePath
 				}
-				SplitPath, FilePath, , dir, ext
-				if(dir){
+				runValue:=RegExReplace(FilePath,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
+				SplitPath, runValue, , dir, ext
+				if(dir && FileExist(dir)){
 					SetWorkingDir,%dir%
 				}
 				if(FileHideRun="是"){
@@ -192,7 +199,12 @@ LVApply:
 				SetWorkingDir,%A_ScriptDir%
 			}
 		}else if(menuItem="编辑"){
-			PostMessage, 0x111, 65401,,, %FilePath% ahk_class AutoHotkey
+			;~ PostMessage, 0x111, 65401,,, %FilePath% ahk_class AutoHotkey
+			if(A_AhkPath){
+				Run,edit "%FilePath%"
+			}else{
+				Run,notepad.exe "%FilePath%"
+			}
 		}else if(menuItem="挂起"){
 			PostMessage, 0x111, 65404,,, %FilePath% ahk_class AutoHotkey
 			LVStatusChange(RowNumber,FileStatus,"挂起")
@@ -1095,10 +1107,11 @@ Run_Run_Run(runn,runv){
 	global
 	try {
 		if(InStr(runv,"..\")=1){
-			FilePath:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(runv,A_ScriptFullPath) : runv
+			runv:=IsFunc("funcPath2AbsoluteZz") ? Func("funcPath2AbsoluteZz").Call(runv,A_ScriptFullPath) : runv
 		}
-		SplitPath, FilePath, , dir, ext
-		if(dir){
+		runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
+		SplitPath, runValue, , dir, ext
+		if(dir && FileExist(dir)){
 			SetWorkingDir,%dir%
 		}
 		;设定为隐藏启动
