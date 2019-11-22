@@ -96,7 +96,7 @@ rule_user_name(name){
 	return A_UserName=name ? true : false
 }
 /*
-【验证当前登录用户有管理员权限】
+【验证RunAnyCtrl有管理员权限】
 */
 rule_user_is_admin(){
 	return A_IsAdmin=1 ? true : false
