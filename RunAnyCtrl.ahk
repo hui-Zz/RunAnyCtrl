@@ -1,6 +1,6 @@
 ﻿/*
 ╔══════════════════════════════════════════════════
-║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.5
+║【RunAnyCtrl】一劳永逸的规则启动控制器 v2.5.6
 ║ https://github.com/hui-Zz/RunAnyCtrl
 ║ by hui-Zz 建议：hui0.0713@gmail.com
 ║ 讨论QQ群：[246308937]、3222783、493194474
@@ -17,7 +17,7 @@ SetWorkingDir,%A_ScriptDir% ;~脚本当前工作目录
 SetTitleMatchMode,2         ;~窗口标题模糊匹配
 DetectHiddenWindows,On      ;~显示隐藏窗口
 global RunAnyCtrl:="RunAnyCtrl"	;名称
-global RunAnyCtrl_version:="2.5.5"
+global RunAnyCtrl_version:="2.5.6"
 global ahkExePath:=Var_Read("ahkExePath",A_AhkPath)	;AutoHotkey.exe路径
 global iniFile:=A_ScriptDir "\" RunAnyCtrl ".ini"
 global pluginsFile:=A_ScriptDir "\Lib\RunAnyCtrlPlugins.ahk"
@@ -68,6 +68,15 @@ return
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 LV_Show:
 gosub,Run_Item_Read
+global RunImageListID:=IL_Create(8)
+IL_Add(RunImageListID, "shell32.dll", 1)
+IL_Add(RunImageListID, "shell32.dll", 3)
+IL_Add(RunImageListID, "shell32.dll", 44)
+IL_Add(RunImageListID, A_AhkPath, 1)
+IL_Add(RunImageListID, A_AhkPath, 2)
+IL_Add(RunImageListID, A_AhkPath, 3)
+IL_Add(RunImageListID, A_AhkPath, 4)
+IL_Add(RunImageListID, A_AhkPath, 5)
 global ColumnName:=1
 global ColumnType:=2
 global ColumnAutoRun:=3
@@ -87,6 +96,7 @@ Gui,Default
 Gui,+Resize
 Gui,Font, s10, Microsoft YaHei
 Gui,Add, Listview, xm w900 r20 grid AltSubmit vRunAnyLV glistview, 启动项名|类型|自启|隐藏|自关|不重复|最多|规则|匹配|循环|间隔|状态|最后运行时间|路径
+LV_SetImageList(RunImageListID)
 ;~;[读取启动项内容写入列表]
 GuiControl, -Redraw, RunAnyLV
 For runn, runv in run_item_List
@@ -95,7 +105,7 @@ For runn, runv in run_item_List
 	runValue:=RegExReplace(runv,"iS)(.*?\.exe)($| .*)","$1")	;去掉参数
 	SplitPath, runValue,,, FileExt  ; 获取文件扩展名.
 	runType:=FileExt ? FileExt : RegExMatch(runv,"iS)([\w-]+://?|www[.]).*") ? "网址" : "未知"
-	LV_Add("", runn, runType, auto_run_item_List[runn] ? "是" : "", hide_run_item_List[runn] ? "是" : "", close_run_item_List[runn] ? "是" : "", repeat_run_item_List[runn] ? "是" : "", most_run_item_List[runn], rule_run_item_List[runn] ? "是" : "", rule_run_item_List[runn] ? rule_logic_item_List[runn] ? "与" : "或" : "", rule_number_item_List[runn], rule_time_item_List[runn], runStatus, last_run_time_List[runn], runv)
+	LV_Add(runType="网址" ? "Icon3" : LVRunIcon(runValue,FileExt), runn, runType, auto_run_item_List[runn] ? "是" : "", hide_run_item_List[runn] ? "是" : "", close_run_item_List[runn] ? "是" : "", repeat_run_item_List[runn] ? "是" : "", most_run_item_List[runn], rule_run_item_List[runn] ? "是" : "", rule_run_item_List[runn] ? rule_logic_item_List[runn] ? "与" : "或" : "", rule_number_item_List[runn], rule_time_item_List[runn], runStatus, last_run_time_List[runn], runv)
 }
 GuiControl, +Redraw, RunAnyLV
 LVMenu("LVMenu")
@@ -129,6 +139,66 @@ LVMenu(addMenu){
 	Menu, %addMenu%, Icon,% flag ? "设置" : "设置`tF9", SHELL32.dll,22
 	Menu, %addMenu%, Add,% flag ? "规则" : "规则`tF10", LVRule
 	Menu, %addMenu%, Icon,% flag ? "规则" : "规则`tF10", SHELL32.dll,166
+}
+LVRunIcon(FileName,FileExt){
+	if(FileName!="" && !InStr(FileName,"\")){
+		if(FileExist(A_WinDir "\" FileName))
+			FileName=%A_WinDir%\%FileName%
+		if(FileExist(A_WinDir "\system32\" FileName))
+			FileName=%A_WinDir%\system32\%FileName%
+	}
+	; 计算 SHFILEINFO 结构需要的缓存大小.
+	sfi_size := A_PtrSize + 8 + (A_IsUnicode ? 680 : 340)
+	VarSetCapacity(sfi, sfi_size)
+	;【下面开始处理未知的项目图标】
+    if FileExt in EXE,ICO,ANI,CUR
+    {
+        ExtID := FileExt  ; 特殊 ID 作为占位符.
+        IconNumber = 0  ; 进行标记这样每种类型就含有唯一的图标.
+    }
+    else  ; 其他的扩展名/文件类型, 计算它们的唯一 ID.
+    {
+        ExtID = 0  ; 进行初始化来处理比其他更短的扩展名.
+        Loop 7     ; 限制扩展名为 7 个字符, 这样之后计算的结果才能存放到 64 位值.
+        {
+            StringMid, ExtChar, FileExt, A_Index, 1
+            if not ExtChar  ; 没有更多字符了.
+                break
+            ; 把每个字符与不同的位位置进行运算来得到唯一 ID:
+            ExtID := ExtID | (Asc(ExtChar) << (8 * (A_Index - 1)))
+        }
+        ; 检查此文件扩展名的图标是否已经在图像列表中. 如果是,
+        ; 可以避免多次调用并极大提高性能,
+        ; 尤其对于包含数以百计文件的文件夹而言:
+		if(ExtID>0)
+			IconNumber := IconArray%ExtID%
+        noEXE:=true
+    }
+    if not IconNumber  ; 此扩展名还没有相应的图标, 所以进行加载.
+    {
+		; 获取与此文件扩展名关联的高质量小图标:
+		if not DllCall("Shell32\SHGetFileInfo" . (A_IsUnicode ? "W":"A"), "str", FileName
+            , "uint", 0, "ptr", &sfi, "uint", sfi_size, "uint", 0x101)  ; 0x101 为 SHGFI_ICON+SHGFI_SMALLICON
+		{
+			IconNumber = 2  ; 显示默认应用图标.
+			if(noEXE)
+				IconNumber = 1
+		}
+		else ; 成功加载图标.
+		{
+			; 从结构中提取 hIcon 成员:
+			hIcon := NumGet(sfi, 0)
+			; 直接添加 HICON 到小图标和大图标列表.
+			; 下面加上 1 来把返回的索引从基于零转换到基于一:
+			IconNumber := DllCall("ImageList_ReplaceIcon", "ptr", RunImageListID, "int", -1, "ptr", hIcon) + 1
+			; 现在已经把它复制到图像列表, 所以应销毁原来的:
+			DllCall("DestroyIcon", "ptr", hIcon)
+			; 缓存图标来节省内存并提升加载性能:
+			if(ExtID>0)
+				IconArray%ExtID% := IconNumber
+		}
+	}
+	return "Icon" . IconNumber
 }
 LVRun:
 	menuItem:="启动"
