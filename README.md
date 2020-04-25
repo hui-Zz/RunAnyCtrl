@@ -8,8 +8,6 @@
 
 【RunAnyCtrl下载地址】：https://github.com/hui-Zz/RunAnyCtrl/archive/master.zip
 
-> （RunAnyCtrl是AHK脚本，需要先在系统中安装AutoHotkey软件，才能启动，下载地址：[https://autohotkey.com](https://autohotkey.com) ）
-
 ---
 
 ## RunAnyCtrl使用场景
