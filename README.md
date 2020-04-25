@@ -1,4 +1,4 @@
-# 【RunAnyCtrl】自由控制软件自动启动 [v2.5.1](#)
+# 【RunAnyCtrl】自由控制软件自动启动 [v2.5.6](#)
 
 设定足够灵活的规则，在不同的使用场景下自动智能地启动不同的软件和应用，这是我开发这个软件的初衷😁
 
@@ -6,7 +6,7 @@
 
 同时RunAnyCtrl也可以做为一个AHK脚本的集中管理器
 
-【RunAnyCtrl下载地址】：https://github.com/hui-Zz/RunAnyCtrl/archive/v2.5.1.zip
+【RunAnyCtrl下载地址】：https://github.com/hui-Zz/RunAnyCtrl/archive/master.zip
 
 > （RunAnyCtrl是AHK脚本，需要先在系统中安装AutoHotkey软件，才能启动，下载地址：[https://autohotkey.com](https://autohotkey.com) ）
 
