@@ -1,12 +1,19 @@
-# 【RunAnyCtrl】自由控制软件自动启动 [v2.5.6](#)
+## 【RunAnyCtrl】所有功能已全面集成到【RunAny】5.7.7及以上版本中，
+## 同时增加了变量规则、启动RunAny菜单项、最小最大化启动等更多功能  
+## 【RunAny】[https://github.com/hui-Zz/RunAny](https://github.com/hui-Zz/RunAny)  
+## 【RunAny文档】[https://hui-zz.gitee.io/RunAny/#/run-ctrl](https://hui-zz.gitee.io/RunAny/#/run-ctrl)
+
+
+
+---
+
+## 【RunAnyCtrl】自由控制软件自动启动 [v2.5.6](#)
 
 设定足够灵活的规则，在不同的使用场景下自动智能地启动不同的软件和应用，这是我开发这个软件的初衷😁
 
 **RunAnyCtrl跟OneDrive之类同步网盘搭配更佳，让你电脑了解你的上班、学习、娱乐各种情景！随你心意**
 
 同时RunAnyCtrl也可以做为一个AHK脚本的集中管理器
-
-【RunAnyCtrl下载地址】：https://github.com/hui-Zz/RunAnyCtrl/archive/master.zip
 
 ---
 

@@ -1,7 +1,7 @@
 ﻿/*
 【RunAnyCtrl公共规则函数库】
 */
-global rule_common_version:="2.5.3"
+global rule_common_version:="2.5.4"
 rule_true(){
 	return true
 }
@@ -31,7 +31,7 @@ rule_IsRun(runNamePath){
 	return false
 }
 /*
-【判断启动项今天是否运行过】
+【判断启动项exe今天是否运行过】
 runName 启动项名称+后缀
 */
 rule_run_today(runName){
@@ -44,6 +44,32 @@ rule_run_today(runName){
 		flist:=StrSplit(cmdResult,"`r`n")
 		if(flist && flist[1]){
 			lastRun:=% A_WinDir . "\Prefetch\" . flist[1]
+			FileGetTime, lastRunTime, %lastRun%
+		}
+	}
+	if(lastRunTime){
+		FormatTime, t1, %A_Now%, yyyyMMdd
+		FormatTime, t2, %lastRunTime%, yyyyMMdd
+		t1 -= %t2%, Days
+		return !t1 ? true : false
+	}else{
+		return false
+	}
+}
+/*
+【判断启动项文件今天是否运行过】
+runName 启动项名称+后缀
+*/
+rule_run_today_file(runName){
+	global last_run_time_List
+	lastRunTime:=""
+	if(IsObject(last_run_time_List) && last_run_time_List){
+		lastRunTime:=last_run_time_List[runName]
+	}else{
+		cmdResult:=IsFunc("cmdSilenceReturn") ? Func("cmdSilenceReturn").Call("dir %appdata%\Microsoft\Windows\Recent /b/a/o-d |findstr /i """ runName """") : ""
+		flist:=StrSplit(cmdResult,"`r`n")
+		if(flist && flist[1]){
+			lastRun:=% A_AppData . "\Microsoft\Windows\Recent\" . flist[1] . ".lnk"
 			FileGetTime, lastRunTime, %lastRun%
 		}
 	}

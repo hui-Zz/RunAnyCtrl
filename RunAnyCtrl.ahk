@@ -59,9 +59,9 @@ Gosub,Rule_Effect
 Gosub,AutoRun_Effect
 OnExit,ExitSub
 ;每月1日检查版本更新
-if(A_DD=01 || A_DD=15){
-	Gosub,Github_Update
-}
+;if(A_DD=01 || A_DD=15){
+	;Gosub,Github_Update
+;}
 return
 ;══════════════════════════════════════════════════════════════════════════════════════════════════════
 ;~;[启动项管理器]
